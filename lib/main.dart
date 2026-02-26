@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'package:medicare/assistantReg.dart';
+import 'package:medicare/assistant_reg.dart';
 import 'package:medicare/profile.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
@@ -177,7 +177,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const assistantReg()),
+                  MaterialPageRoute(builder: (context) => const AssistantReg()),
                 );
               },
               child: const Text('Register'),

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class assistantReg extends StatefulWidget {
-  const assistantReg({super.key}); //constructor
+class AssistantReg extends StatefulWidget {
+  const AssistantReg({super.key}); //constructor
 
   @override
-  State<assistantReg> createState() => _FormPageState();
+  State<AssistantReg> createState() => _FormPageState();
 }
 
-class _FormPageState extends State<assistantReg> {
+class _FormPageState extends State<AssistantReg> {
   // 1. Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormState>();
 
