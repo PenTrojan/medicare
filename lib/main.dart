@@ -2,16 +2,74 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:medicare/assistantReg.dart';
+import 'package:medicare/profile.dart';
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase service
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize FirebaseUIAut providers
+  FirebaseUIAuth.configureProviders([
+    EmailAuthProvider(),
+    GoogleProvider(
+      // web client ID from the firebase Google sign in method
+      clientId:
+          '516002987264-fv78t5h707jb6ujbfe17h030opab9m37.apps.googleusercontent.com',
+    ),
+  ]);
+
+  // Run the app
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: AuthGate(), // This will handle showing the login page or the app
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // 1. If the user is NOT logged in, show the FirebaseUI SignInScreen
+        if (!snapshot.hasData) {
+          return SignInScreen(
+            providers: FirebaseUIAuth.providersFor(FirebaseAuth.instance.app),
+            headerBuilder: (context, constraints, shrinkOffset) {
+              return const Padding(
+                padding: EdgeInsets.all(20),
+                child: Icon(
+                  Icons.medical_services,
+                  size: 60,
+                  color: Colors.blue,
+                ),
+              );
+            },
+          );
+        }
+
+        // 2. If the user IS logged in, show your home page
+        return const MyHomePage(title: 'Medical Assistant Matching');
+      },
+    );
+  }
+
+  /*
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -37,7 +95,7 @@ class MyApp extends StatelessWidget {
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
-  }
+  }*/
 }
 
 class MyHomePage extends StatefulWidget {
@@ -123,6 +181,17 @@ class _MyHomePageState extends State<MyHomePage> {
                 );
               },
               child: const Text('Register'),
+            ),
+
+            // go to profile button
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const profile()),
+                );
+              },
+              child: const Text('Profile'),
             ),
           ],
         ),
