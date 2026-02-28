@@ -2,23 +2,25 @@
 abstract class AppUser {
   // attributes common to all users
   final String uid;
-  final String displayName;
-  final String email;
+  final String? displayName; //Nullable for guests
+  final String? email; //Nullable for guests
 
-  AppUser({required this.uid, required this.displayName, required this.email});
+  AppUser({required this.uid, this.displayName, this.email});
 
-  // Convert Firestore document to a specific User object
-  Map<String, dynamic> toMap();
+  Map<String, dynamic>
+  toMap(); // abstract method for mapping data from the database
 }
 
-class Caregiver extends AppUser {
+// Inheritance =======================================================
+
+class Assistant extends AppUser {
   final List<String> skills;
   final bool isVerified;
 
-  Caregiver({
+  Assistant({
     required super.uid,
-    required super.displayName,
-    required super.email,
+    required super.displayName, // required because no anonymous users
+    required super.email, // required because no anonymous users
     required this.skills,
     this.isVerified = false,
   });
@@ -29,7 +31,7 @@ class Caregiver extends AppUser {
       'uid': uid,
       'name': displayName,
       'email': email,
-      'role': 'caregiver',
+      'role': 'assistant',
       'skills': skills,
       'isVerified': isVerified,
     };
@@ -41,8 +43,8 @@ class Seeker extends AppUser {
 
   Seeker({
     required super.uid,
-    required super.displayName,
-    required super.email,
+    super.displayName,
+    super.email,
     this.activeJobIds = const [],
   });
 

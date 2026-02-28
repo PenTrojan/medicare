@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:medicare/screens/login.dart';
-import 'package:medicare/assistant_reg.dart';
-import 'package:medicare/profile.dart';
 import 'package:medicare/services/firebase_service.dart';
 
 void main() async {
@@ -18,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: AuthGate(), // This will handle showing the login page or the app
+      home: AuthGate(), // Show the login page
     );
   }
 }
@@ -49,7 +47,7 @@ class MyApp extends StatelessWidget {
       ),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
-  }*/
+  }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -157,3 +155,4 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+*/
