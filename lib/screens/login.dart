@@ -53,8 +53,9 @@ class AuthGate extends StatelessWidget {
 
         // if logged in -> fetch user data
 
-        return FutureBuilder<AppUser?>(
-          future: authService.getAppUserData(snapshot.data!),
+        // real time watching for sign in status
+        return StreamBuilder<AppUser?>(
+          stream: authService.appUserStream(snapshot.data!),
           builder: (context, userSnapshot) {
             //show a loader
             if (userSnapshot.connectionState == ConnectionState.waiting) {

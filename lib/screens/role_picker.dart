@@ -16,21 +16,27 @@ class _RolePickerState extends State<RolePicker> {
   void _selectRole(String role) async {
     setState(() => _isLoading = true);
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser != null) {
       try {
-        await _authService.createUserProfile(user, role);
+        await _authService.createUserProfile(firebaseUser, role);
         // Note: No Navigator.pop/push needed.
         // AuthGate will rebuild automatically once the Firestore doc exists.
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error saving role: $e")));
+        // check if user had gone away
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Error saving role: $e")));
+        }
         setState(() => _isLoading = false);
       }
     }
   }
 
+  // =======================================================================================
+  // ============  UI  =====================================================================
+  // =======================================================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
