@@ -8,6 +8,8 @@ import 'package:medicare/screens/seeker/seeker_dashboard.dart'
 import 'package:medicare/services/auth_service.dart';
 import 'package:medicare/models/app_user.dart';
 import 'package:medicare/screens/role_picker.dart';
+import 'package:medicare/screens/assistant/assistant_reg.dart' as assistant_reg;
+import 'package:medicare/screens/seeker/seeker_reg.dart' as seeker_reg;
 
 // auth UI
 class AuthGate extends StatelessWidget {
@@ -73,8 +75,14 @@ class AuthGate extends StatelessWidget {
 
             // Polymorphic Routing ================================================
             if (appUser is Assistant) {
+              if (!appUser.registrationComplete) {
+                return const assistant_reg.AssistantReg();
+              }
               return const assistant_dashboard.AssistantDash();
             } else if (appUser is Seeker) {
+              //if (!appUser.registrationComplete && !appUser.isAnonymous) {
+              //  return const seeker_reg.SeekerReg();
+              //}
               return const seeker_dashboard.SeekerDash();
             }
 

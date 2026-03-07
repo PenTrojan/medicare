@@ -14,6 +14,7 @@ abstract class AppUser {
   final String _uid;
   final String? _displayName; //Nullable for guests
   final String? _email; //Nullable for guests
+  bool _registrationComplete = false;
 
   AppUser({required String uid, String? displayName, String? email})
     : _uid = uid,
@@ -24,6 +25,7 @@ abstract class AppUser {
   String get uid => _uid;
   String? get displayName => _displayName;
   String? get email => _email;
+  bool get registrationComplete => _registrationComplete;
 
   Future<void>
   saveToFirestore(); // abstract method for saving data to the database
@@ -71,6 +73,7 @@ abstract class AppUser {
         );
       }
       assistant._proofText = List<String>.from(data['proofText'] ?? []);
+      assistant._registrationComplete = data['registrationComplete'] ?? false;
 
       return assistant;
     } else {
@@ -81,7 +84,7 @@ abstract class AppUser {
       );
 
       seeker._activeJobIds = List<String>.from(data['activeJobIds'] ?? []);
-
+      seeker._registrationComplete = data['registrationComplete'] ?? false;
       return seeker;
     }
   }
@@ -107,6 +110,8 @@ class Assistant extends AppUser {
   List<String> _proofText;
   List<String> _proofImageUrls;
 
+  
+
   // constructor
   Assistant({
     required super.uid,
@@ -117,6 +122,71 @@ class Assistant extends AppUser {
        _proofText = [],
        _proofImageUrls = [],
        _isVerified = false;
+
+  String? get nic => _nic;
+  String? get nicImageUrl => _nicImageUrl;
+  List<String> get skills => List.unmodifiable(_skills);
+  bool get isVerified => _isVerified;
+  String? get experienceDescription => _experienceDescription;
+  String? get address => _address;
+  double? get rating => _rating;
+  String? get bio => _bio;
+  Map<String, List<String>> get workingTimes =>
+      _workingTimes.map((k, v) => MapEntry(k, List.unmodifiable(v)));
+  List<String> get proofText => List.unmodifiable(_proofText);
+  List<String> get proofImageUrls => List.unmodifiable(_proofImageUrls);
+
+  void updateRegistrationDetails({
+    String? nic,
+    String? nicImageUrl,
+    List<String>? skills,
+    String? experienceDescription,
+    String? address,
+    String? bio,
+    Map<String, List<String>>? workingTimes,
+    List<String>? proofText,
+    List<String>? proofImageUrls,
+    bool? registrationComplete,
+  }) {
+    if (nic != null) _nic = nic.trim();
+    if (nicImageUrl != null) _nicImageUrl = nicImageUrl.trim();
+    if (skills != null) {
+      _skills =
+          skills.map((s) => s.trim()).where((s) => s.isNotEmpty).toSet().toList()
+            ..sort();
+    }
+    if (experienceDescription != null) {
+      _experienceDescription = experienceDescription.trim();
+    }
+    if (address != null) _address = address.trim();
+    if (bio != null) _bio = bio.trim();
+    if (workingTimes != null) {
+      _workingTimes = workingTimes.map(
+        (k, v) => MapEntry(k.trim(), v.map((s) => s.trim()).toList()),
+      );
+    }
+    if (proofText != null) {
+      _proofText =
+          proofText
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort();
+    }
+    if (proofImageUrls != null) {
+      _proofImageUrls =
+          proofImageUrls
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toSet()
+              .toList()
+            ..sort();
+    }
+    if (registrationComplete != null) {
+      _registrationComplete = registrationComplete;
+    }
+  }
 
   // Polymorphism
   @override
@@ -137,6 +207,7 @@ class Assistant extends AppUser {
       'workingTimes': _workingTimes,
       'proofText': _proofText,
       'proofImageUrls': _proofImageUrls,
+      'registrationComplete': _registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -152,6 +223,7 @@ class Seeker extends AppUser {
   Seeker({required super.uid, super.displayName, super.email})
     : _activeJobIds = [];
 
+
   @override
   Future<void> saveToFirestore() async {
     await FirebaseFirestore.instance.collection('users').doc(uid).set({
@@ -160,6 +232,7 @@ class Seeker extends AppUser {
       'email': email,
       'role': 'seeker',
       'activeJobIds': _activeJobIds,
+      'registrationComplete': _registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

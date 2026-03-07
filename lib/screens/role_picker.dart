@@ -20,8 +20,6 @@ class _RolePickerState extends State<RolePicker> {
     if (firebaseUser != null) {
       try {
         await _authService.createUserProfile(firebaseUser, role);
-        // Note: No Navigator.pop/push needed.
-        // AuthGate will rebuild automatically once the Firestore doc exists.
       } catch (e) {
         // check if user had gone away
         if (mounted) {

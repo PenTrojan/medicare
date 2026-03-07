@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:medicare/assistant_reg.dart';
+import 'package:medicare/screens/assistant/assistant_reg.dart';
 import 'package:medicare/profile.dart';
 
 class AssistantDash extends StatefulWidget {
@@ -37,11 +37,11 @@ class _AssistantDashState extends State<AssistantDash> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const profile()),
+                  MaterialPageRoute(builder: (context) => const Profile()),
                 );
               },
               child: const Text('Profile'),
-            ),
+            ), // go to profile button
           ],
         ),
       ),

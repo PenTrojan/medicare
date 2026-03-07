@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:medicare/assistant_reg.dart';
 import 'package:medicare/profile.dart';
+import 'package:medicare/screens/assistant/assistant_reg.dart';
 
 class SeekerDash extends StatefulWidget {
   const SeekerDash({super.key}); //constructor
@@ -37,7 +37,7 @@ class _SeekerDashState extends State<SeekerDash> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const profile()),
+                  MaterialPageRoute(builder: (context) => const Profile()),
                 );
               },
               child: const Text('Profile'),
