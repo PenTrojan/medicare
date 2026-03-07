@@ -57,7 +57,10 @@ class AuthGate extends StatelessWidget {
 
         // real time watching for sign in status
         return StreamBuilder<AppUser?>(
+
+          //  get user data using the appUserStream method from the authService
           stream: authService.appUserStream(snapshot.data!),
+
           builder: (context, userSnapshot) {
             //show a loader
             if (userSnapshot.connectionState == ConnectionState.waiting) {
@@ -66,23 +69,27 @@ class AuthGate extends StatelessWidget {
               );
             }
 
-            // if user isn't anonymous but also isn't registered
+            // if user isn't anonymous but also isn't registered create a new user
             if (userSnapshot.data == null) {
-              return const RolePicker();
+              return const RolePicker();   
             }
 
             final AppUser appUser = userSnapshot.data!;
 
             // Polymorphic Routing ================================================
+            //======================================================================
+            // * if registration complete -> show the relevent dashboard
+            // * if not registered -> show the relevent registration screen
+            //======================================================================
             if (appUser is Assistant) {
               if (!appUser.registrationComplete) {
                 return const assistant_reg.AssistantReg();
               }
               return const assistant_dashboard.AssistantDash();
             } else if (appUser is Seeker) {
-              //if (!appUser.registrationComplete && !appUser.isAnonymous) {
-              //  return const seeker_reg.SeekerReg();
-              //}
+                if (!appUser.registrationComplete && !appUser.isGuest) {
+                  return const seeker_reg.SeekerReg();
+                }
               return const seeker_dashboard.SeekerDash();
             }
 

@@ -111,7 +111,6 @@ class Assistant extends AppUser {
   List<String> _proofImageUrls;
 
   
-
   // constructor
   Assistant({
     required super.uid,
@@ -123,70 +122,45 @@ class Assistant extends AppUser {
        _proofImageUrls = [],
        _isVerified = false;
 
+
+  // getters for UI to read the existing data
   String? get nic => _nic;
   String? get nicImageUrl => _nicImageUrl;
-  List<String> get skills => List.unmodifiable(_skills);
-  bool get isVerified => _isVerified;
-  String? get experienceDescription => _experienceDescription;
   String? get address => _address;
-  double? get rating => _rating;
   String? get bio => _bio;
-  Map<String, List<String>> get workingTimes =>
-      _workingTimes.map((k, v) => MapEntry(k, List.unmodifiable(v)));
-  List<String> get proofText => List.unmodifiable(_proofText);
-  List<String> get proofImageUrls => List.unmodifiable(_proofImageUrls);
+  String? get experienceDescription => _experienceDescription;
+  List<String> get skills => _skills;
+  Map<String, List<String>> get workingTimes => _workingTimes;
+  List<String> get proofText => _proofText;
+  List<String> get proofImageUrls => _proofImageUrls;
+  bool get isVerified => _isVerified;
 
+
+  // update details inside the object locally (before uploading to the firestore)
   void updateRegistrationDetails({
-    String? nic,
-    String? nicImageUrl,
-    List<String>? skills,
-    String? experienceDescription,
-    String? address,
-    String? bio,
-    Map<String, List<String>>? workingTimes,
-    List<String>? proofText,
-    List<String>? proofImageUrls,
-    bool? registrationComplete,
+    required String nic,
+    required String? nicImageUrl,
+    required String address,
+    required String bio,
+    required String experienceDescription,
+    required List<String> skills,
+    required Map<String, List<String>> workingTimes,
+    required List<String> proofText,
+    required List<String> proofImageUrls,
+    required bool registrationComplete,
   }) {
-    if (nic != null) _nic = nic.trim();
-    if (nicImageUrl != null) _nicImageUrl = nicImageUrl.trim();
-    if (skills != null) {
-      _skills =
-          skills.map((s) => s.trim()).where((s) => s.isNotEmpty).toSet().toList()
-            ..sort();
-    }
-    if (experienceDescription != null) {
-      _experienceDescription = experienceDescription.trim();
-    }
-    if (address != null) _address = address.trim();
-    if (bio != null) _bio = bio.trim();
-    if (workingTimes != null) {
-      _workingTimes = workingTimes.map(
-        (k, v) => MapEntry(k.trim(), v.map((s) => s.trim()).toList()),
-      );
-    }
-    if (proofText != null) {
-      _proofText =
-          proofText
-              .map((s) => s.trim())
-              .where((s) => s.isNotEmpty)
-              .toSet()
-              .toList()
-            ..sort();
-    }
-    if (proofImageUrls != null) {
-      _proofImageUrls =
-          proofImageUrls
-              .map((s) => s.trim())
-              .where((s) => s.isNotEmpty)
-              .toSet()
-              .toList()
-            ..sort();
-    }
-    if (registrationComplete != null) {
-      _registrationComplete = registrationComplete;
-    }
+    _nic = nic;
+    _nicImageUrl = nicImageUrl;
+    _address = address;
+    _bio = bio;
+    _experienceDescription = experienceDescription;
+    _skills = skills;
+    _workingTimes = workingTimes;
+    _proofText = proofText;
+    _proofImageUrls = proofImageUrls;
+    _registrationComplete = registrationComplete;
   }
+
 
   // Polymorphism
   @override
@@ -218,12 +192,19 @@ class Assistant extends AppUser {
 // ===========================================================================
 
 class Seeker extends AppUser {
+
+  bool _isGuest;         // for anonymous users
   List<String> _activeJobIds;
 
-  Seeker({required super.uid, super.displayName, super.email})
-    : _activeJobIds = [];
+  Seeker({required super.uid, super.displayName, super.email, bool isGuest = false,})
+    : _isGuest = isGuest,
+      _activeJobIds = [];
 
 
+  // getter for isGuest
+  bool get isGuest => _isGuest;
+  
+  //isGuest is not sent
   @override
   Future<void> saveToFirestore() async {
     await FirebaseFirestore.instance.collection('users').doc(uid).set({

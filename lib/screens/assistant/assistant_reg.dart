@@ -1,570 +1,268 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:medicare/models/app_user.dart';
 import 'package:medicare/services/auth_service.dart';
+import 'package:medicare/services/image_upload_service.dart';
 
 class AssistantReg extends StatefulWidget {
-  const AssistantReg({super.key}); //constructor
+  const AssistantReg({super.key});
 
   @override
-  State<AssistantReg> createState() => _FormPageState();
+  State<AssistantReg> createState() => _AssistantRegState();
 }
 
-class _FormPageState extends State<AssistantReg> {
+class _AssistantRegState extends State<AssistantReg> {
   final _formKey = GlobalKey<FormState>();
+  final ImageUploadService _uploadService = ImageUploadService();
+  final ImagePicker _picker = ImagePicker();
 
+  // Controllers initialized with empty strings
   final _nicController = TextEditingController();
-  final _nicImageUrlController = TextEditingController();
   final _addressController = TextEditingController();
   final _bioController = TextEditingController();
   final _experienceController = TextEditingController();
-
   final _skillController = TextEditingController();
+
+  // State for complex data types
   final List<String> _skills = [];
-
-  final _proofTextController = TextEditingController();
-  final List<String> _proofText = [];
-
-  final _proofImageUrlController = TextEditingController();
   final List<String> _proofImageUrls = [];
-
-  bool _didInitFromUser = false;
+  String? _nicImageUrl;
+  
+  bool _isUploadingNic = false;
+  bool _isUploadingProof = false;
   bool _isSaving = false;
+  bool _isInitialized = false;
 
-  static const List<String> _weekdays = <String>[
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
-
-  final Map<String, bool> _dayEnabled = {
-    for (final d in _weekdays) d: false,
-  };
-  final Map<String, TimeOfDay?> _dayStart = {
-    for (final d in _weekdays) d: null,
-  };
-  final Map<String, TimeOfDay?> _dayEnd = {
-    for (final d in _weekdays) d: null,
-  };
+  // Working Hours State
+  final List<String> _weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  late Map<String, bool> _dayEnabled;
+  late Map<String, TimeOfDay?> _dayStart;
+  late Map<String, TimeOfDay?> _dayEnd;
 
   @override
-  void dispose() {
-    _nicController.dispose();
-    _nicImageUrlController.dispose();
-    _addressController.dispose();
-    _bioController.dispose();
-    _experienceController.dispose();
-    _skillController.dispose();
-    _proofTextController.dispose();
-    _proofImageUrlController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _dayEnabled = {for (var d in _weekdays) d: false};
+    _dayStart = {for (var d in _weekdays) d: null};
+    _dayEnd = {for (var d in _weekdays) d: null};
   }
 
-  static String _two(int n) => n.toString().padLeft(2, '0');
-
-  static String _formatTime24(TimeOfDay t) =>
-      '${_two(t.hour)}:${_two(t.minute)}';
-
-  static TimeOfDay? _parseTime24(String? s) {
-    if (s == null) return null;
-    final parts = s.split(':');
-    if (parts.length != 2) return null;
-    final h = int.tryParse(parts[0]);
-    final m = int.tryParse(parts[1]);
-    if (h == null || m == null) return null;
-    if (h < 0 || h > 23) return null;
-    if (m < 0 || m > 59) return null;
-    return TimeOfDay(hour: h, minute: m);
-  }
-
-  void _initFromAssistant(Assistant assistant) {
+  // Initializing UI controllers from the Assistant object
+  void _populateFromAssistant(Assistant assistant) {
+    if (_isInitialized) return;
+    
     _nicController.text = assistant.nic ?? '';
-    _nicImageUrlController.text = assistant.nicImageUrl ?? '';
     _addressController.text = assistant.address ?? '';
     _bioController.text = assistant.bio ?? '';
     _experienceController.text = assistant.experienceDescription ?? '';
+    _nicImageUrl = assistant.nicImageUrl;
+    _skills.addAll(assistant.skills);
+    _proofImageUrls.addAll(assistant.proofImageUrls);
 
-    _skills
-      ..clear()
-      ..addAll(assistant.skills);
-
-    _proofText
-      ..clear()
-      ..addAll(assistant.proofText);
-
-    _proofImageUrls
-      ..clear()
-      ..addAll(assistant.proofImageUrls);
-
-    for (final day in _weekdays) {
-      final times = assistant.workingTimes[day];
-      if (times != null && times.length >= 2) {
+    assistant.workingTimes.forEach((day, times) {
+      if (times.length == 2) {
         _dayEnabled[day] = true;
-        _dayStart[day] = _parseTime24(times[0]);
-        _dayEnd[day] = _parseTime24(times[1]);
-      } else {
-        _dayEnabled[day] = false;
-        _dayStart[day] = null;
-        _dayEnd[day] = null;
+        _dayStart[day] = _parseTime(times[0]);
+        _dayEnd[day] = _parseTime(times[1]);
       }
-    }
-  }
-
-  void _addToList(List<String> list, String value) {
-    final v = value.trim();
-    if (v.isEmpty) return;
-    if (!list.contains(v)) {
-      setState(() => list.add(v));
-    }
-  }
-
-  void _removeFromList(List<String> list, String value) {
-    setState(() => list.remove(value));
-  }
-
-  bool _hasAtLeastOneValidWorkingDay() {
-    for (final d in _weekdays) {
-      if (_dayEnabled[d] == true && _dayStart[d] != null && _dayEnd[d] != null) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  Map<String, List<String>> _buildWorkingTimes() {
-    final Map<String, List<String>> out = {};
-    for (final d in _weekdays) {
-      if (_dayEnabled[d] != true) continue;
-      final s = _dayStart[d];
-      final e = _dayEnd[d];
-      if (s == null || e == null) continue;
-      out[d] = <String>[_formatTime24(s), _formatTime24(e)];
-    }
-    return out;
-  }
-
-  Future<void> _pickTime(String day, bool isStart) async {
-    final initial = (isStart ? _dayStart[day] : _dayEnd[day]) ?? const TimeOfDay(hour: 9, minute: 0);
-    final picked = await showTimePicker(context: context, initialTime: initial);
-    if (picked == null) return;
-    setState(() {
-      if (isStart) {
-        _dayStart[day] = picked;
-      } else {
-        _dayEnd[day] = picked;
-      }
-      _dayEnabled[day] = true;
     });
+    _isInitialized = true;
   }
 
-  Future<void> _submit(Assistant assistant) async {
-    FocusScope.of(context).unfocus();
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+  // ================== Image Upload Methods ==================
 
-    if (_skills.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add at least one skill.')),
+  Future<void> _handleImageUpload({required String uid, required bool isNic}) async {
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (pickedFile == null) return;
+
+    setState(() => isNic ? _isUploadingNic = true : _isUploadingProof = true);
+
+    try {
+      final String url = await _uploadService.uploadImage(
+        uid: uid,
+        imageFile: File(pickedFile.path),
+        category: isNic ? 'nic' : 'proof',
       );
-      return;
+
+      setState(() {
+        if (isNic) {
+          _nicImageUrl = url;
+        } else {
+          _proofImageUrls.add(url);
+        }
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      setState(() => isNic ? _isUploadingNic = false : _isUploadingProof = false);
     }
-    if (!_hasAtLeastOneValidWorkingDay()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please set working hours for at least one day.'),
-        ),
-      );
+  }
+
+  // ================== Form Submission ==================
+
+  Future<void> _saveProfile(Assistant assistant) async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_nicImageUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please upload NIC image")));
       return;
     }
 
     setState(() => _isSaving = true);
+
     try {
+      // 1. Update the local object using your new method
       assistant.updateRegistrationDetails(
-        nic: _nicController.text,
-        nicImageUrl: _nicImageUrlController.text,
-        address: _addressController.text,
-        bio: _bioController.text,
-        experienceDescription: _experienceController.text,
-        skills: List<String>.from(_skills),
-        workingTimes: _buildWorkingTimes(),
-        proofText: List<String>.from(_proofText),
-        proofImageUrls: List<String>.from(_proofImageUrls),
+        nic: _nicController.text.trim(),
+        nicImageUrl: _nicImageUrl,
+        address: _addressController.text.trim(),
+        bio: _bioController.text.trim(),
+        experienceDescription: _experienceController.text.trim(),
+        skills: _skills,
+        workingTimes: _generateWorkingTimesMap(),
+        proofText: [], // Add logic if you want text-based proof as well
+        proofImageUrls: _proofImageUrls,
         registrationComplete: true,
       );
 
+      // 2. Polymorphic save call
       await assistant.saveToFirestore();
 
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration saved.')),
-      );
-
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile Updated!")));
       }
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving registration: $e')),
-      );
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Save failed: $e")));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
-  Widget _chipWrap(List<String> items, void Function(String) onRemove) {
-    if (items.isEmpty) {
-      return const Text('None added yet.', style: TextStyle(color: Colors.grey));
-    }
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final item in items)
-          Chip(
-            label: Text(item),
-            onDeleted: () => onRemove(item),
-          ),
-      ],
-    );
-  }
-
-  Widget _workingTimesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Working hours',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        for (final day in _weekdays)
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          day,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Switch(
-                        value: _dayEnabled[day] ?? false,
-                        onChanged: (v) {
-                          setState(() {
-                            _dayEnabled[day] = v;
-                            if (!v) {
-                              _dayStart[day] = null;
-                              _dayEnd[day] = null;
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  if (_dayEnabled[day] == true)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => _pickTime(day, true),
-                            child: Text(
-                              _dayStart[day] == null
-                                  ? 'Start'
-                                  : _formatTime24(_dayStart[day]!),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => _pickTime(day, false),
-                            child: Text(
-                              _dayEnd[day] == null
-                                  ? 'End'
-                                  : _formatTime24(_dayEnd[day]!),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+  // ================== UI Build ==================
 
   @override
   Widget build(BuildContext context) {
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('Not signed in.')),
-      );
-    }
+    final user = FirebaseAuth.instance.currentUser!;
+    
+    return Scaffold(
+      appBar: AppBar(title: const Text("Assistant Registration")),
+      body: StreamBuilder<AppUser?>(
+        stream: AuthService().appUserStream(user),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          
+          final assistant = snapshot.data as Assistant;
+          _populateFromAssistant(assistant);
 
-    final authService = AuthService();
+          return Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                _buildTextField(_nicController, "NIC Number", Icons.badge),
+                const SizedBox(height: 20),
+                
+                // NIC Image Preview/Upload
+                _buildImageUploadTile(
+                  title: "NIC Image",
+                  url: _nicImageUrl,
+                  isUploading: _isUploadingNic,
+                  onTap: () => _handleImageUpload(uid: user.uid, isNic: true),
+                ),
+                
+                const Divider(height: 40),
+                _buildTextField(_addressController, "Residential Address", Icons.home),
+                _buildTextField(_bioController, "Professional Bio", Icons.person, maxLines: 3),
+                _buildTextField(_experienceController, "Work Experience", Icons.work, maxLines: 3),
+                
+                const SizedBox(height: 20),
+                _buildSkillInput(),
+                
+                const SizedBox(height: 20),
+                const Text("Certifications / Proof Images", style: TextStyle(fontWeight: FontWeight.bold)),
+                _buildProofGallery(user.uid),
 
-    return StreamBuilder<AppUser?>(
-      stream: authService.appUserStream(firebaseUser),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final user = snapshot.data;
-        if (user == null || user is! Assistant) {
-          return const Scaffold(
-            body: Center(child: Text('Assistant profile not found.')),
-          );
-        }
-
-        if (!_didInitFromUser) {
-          _didInitFromUser = true;
-          _initFromAssistant(user);
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Complete assistant registration'),
-          ),
-          body: SafeArea(
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  if (user.displayName != null || user.email != null)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user.displayName ?? 'Assistant',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              user.email ?? '',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-
-                  TextFormField(
-                    controller: _nicController,
-                    decoration: const InputDecoration(
-                      labelText: 'NIC',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'NIC is required';
-                      if (v.trim().length < 6) return 'NIC looks too short';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _nicImageUrlController,
-                    decoration: const InputDecoration(
-                      labelText: 'NIC image URL (optional)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _addressController,
-                    decoration: const InputDecoration(
-                      labelText: 'Address',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'Address is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _bioController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Bio',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Bio is required';
-                      if (v.trim().length < 20) return 'Bio is too short';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _experienceController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Experience',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'Experience is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  const Text(
-                    'Skills',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _skillController,
-                          decoration: const InputDecoration(
-                            hintText: 'Add a skill (e.g., Wound dressing)',
-                            border: OutlineInputBorder(),
-                          ),
-                          onSubmitted: (v) {
-                            _addToList(_skills, v);
-                            _skillController.clear();
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          _addToList(_skills, _skillController.text);
-                          _skillController.clear();
-                        },
-                        child: const Text('Add'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _chipWrap(_skills, (s) => _removeFromList(_skills, s)),
-
-                  const SizedBox(height: 20),
-                  _workingTimesSection(),
-
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Proof (text)',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _proofTextController,
-                          decoration: const InputDecoration(
-                            hintText: 'Add certification / proof text',
-                            border: OutlineInputBorder(),
-                          ),
-                          onSubmitted: (v) {
-                            _addToList(_proofText, v);
-                            _proofTextController.clear();
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          _addToList(_proofText, _proofTextController.text);
-                          _proofTextController.clear();
-                        },
-                        child: const Text('Add'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _chipWrap(_proofText, (s) => _removeFromList(_proofText, s)),
-
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Proof image URLs (optional)',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _proofImageUrlController,
-                          decoration: const InputDecoration(
-                            hintText: 'Add image URL',
-                            border: OutlineInputBorder(),
-                          ),
-                          onSubmitted: (v) {
-                            _addToList(_proofImageUrls, v);
-                            _proofImageUrlController.clear();
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () {
-                          _addToList(_proofImageUrls, _proofImageUrlController.text);
-                          _proofImageUrlController.clear();
-                        },
-                        child: const Text('Add'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _chipWrap(
-                    _proofImageUrls,
-                    (s) => _removeFromList(_proofImageUrls, s),
-                  ),
-
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _isSaving ? null : () => _submit(user),
-                      child: _isSaving
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Text('Save & continue'),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  onPressed: _isSaving ? null : () => _saveProfile(assistant),
+                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50)),
+                  child: _isSaving ? const CircularProgressIndicator() : const Text("Save & Complete"),
+                ),
+              ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
-} 
+
+  // ================== Helper Widgets ==================
+
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {int maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon), border: const OutlineInputBorder()),
+        validator: (v) => v!.isEmpty ? "Required" : null,
+      ),
+    );
+  }
+
+  Widget _buildImageUploadTile({required String title, required String? url, required bool isUploading, required VoidCallback onTap}) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title),
+      trailing: isUploading 
+        ? const CircularProgressIndicator() 
+        : (url != null ? const Icon(Icons.check_circle, color: Colors.green) : const Icon(Icons.upload)),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(side: const BorderSide(color: Colors.grey), borderRadius: BorderRadius.circular(8)),
+    );
+  }
+
+  Widget _buildSkillInput() {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: TextField(controller: _skillController, decoration: const InputDecoration(hintText: "Add Skill (e.g. Nursing)"))),
+            IconButton(icon: const Icon(Icons.add), onPressed: () {
+              if (_skillController.text.isNotEmpty) {
+                setState(() => _skills.add(_skillController.text.trim()));
+                _skillController.clear();
+              }
+            }),
+          ],
+        ),
+        Wrap(children: _skills.map((s) => Chip(label: Text(s), onDeleted: () => setState(() => _skills.remove(s)))).toList()),
+      ],
+    );
+  }
+
+  Widget _buildProofGallery(String uid) {
+    return Wrap(
+      spacing: 10,
+      children: [
+        ..._proofImageUrls.map((url) => Image.network(url, width: 60, height: 60, fit: BoxFit.cover)),
+        IconButton(
+          icon: _isUploadingProof ? const CircularProgressIndicator() : const Icon(Icons.add_a_photo, size: 40),
+          onPressed: () => _handleImageUpload(uid: uid, isNic: false),
+        )
+      ],
+    );
+  }
+
+  // Time Parsing Helpers
+  TimeOfDay _parseTime(String time) {
+    final parts = time.split(':');
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+  }
+
+  Map<String, List<String>> _generateWorkingTimesMap() {
+    // Logic to build the Map from the UI state (e.g. Monday: [08:00, 17:00])
+    return {}; // Implement based on your Switch/TimePicker UI
+  }
+}
