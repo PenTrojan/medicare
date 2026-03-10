@@ -39,6 +39,7 @@ dependencies:
   firebase_ui_auth: ^3.0.1
   firebase_ui_oauth_google: ^2.0.1
   firebase_auth: ^6.1.4
+  geolocator: ^13.0.1
 
   # for uploading proof images
   image_picker: ^1.0.7
