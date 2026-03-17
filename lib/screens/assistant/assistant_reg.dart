@@ -309,6 +309,13 @@ class _AssistantRegState extends State<AssistantReg> {
                   _nicController,
                   "NIC Number",
                   Icons.badge_outlined,
+                  textCapitalization: TextCapitalization.characters,
+                  customValidator: (v) {
+                    final nicRegex = RegExp(r'^(\d{9}V|\d{12})$');
+                    if (v == null || v.isEmpty) return 'Please enter a valid Sri Lankan NIC';
+                    if (!nicRegex.hasMatch(v.trim())) return 'Please enter a valid Sri Lankan NIC';
+                    return null;
+                  },
                 ),
 
                 DropdownButtonFormField<Gender>(
@@ -501,6 +508,8 @@ class _AssistantRegState extends State<AssistantReg> {
     IconData icon, {
     int maxLines = 1,
     bool isNumber = false,
+    String? Function(String?)? customValidator,
+    TextCapitalization textCapitalization = TextCapitalization.none,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
@@ -508,12 +517,13 @@ class _AssistantRegState extends State<AssistantReg> {
         controller: controller,
         maxLines: maxLines,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        textCapitalization: textCapitalization,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),
           border: const OutlineInputBorder(),
         ),
-        validator: (v) => v!.isEmpty ? "Required" : null,
+        validator: customValidator ?? (v) => v!.isEmpty ? "Required" : null,
       ),
     );
   }

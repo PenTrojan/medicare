@@ -42,7 +42,7 @@ class Profile extends StatelessWidget {
                   padding: EdgeInsets.all(20.0),
                   child: Divider(),
                 ),
-                _buildLogoutButton(),
+                  _buildLogoutButton(context),
                 const SizedBox(height: 30),
               ],
             ),
@@ -145,11 +145,16 @@ class Profile extends StatelessWidget {
     );
   }
 
-  Widget _buildLogoutButton() {
+    Widget _buildLogoutButton(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ElevatedButton.icon(
-        onPressed: () => FirebaseAuth.instance.signOut(),
+          onPressed: () async {
+            await FirebaseAuth.instance.signOut();
+            if (context.mounted) {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          },
         icon: const Icon(Icons.logout),
         label: const Text("Log Out"),
         style: ElevatedButton.styleFrom(
