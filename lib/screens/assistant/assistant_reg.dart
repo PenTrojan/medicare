@@ -312,8 +312,10 @@ class _AssistantRegState extends State<AssistantReg> {
                   textCapitalization: TextCapitalization.characters,
                   customValidator: (v) {
                     final nicRegex = RegExp(r'^(\d{9}V|\d{12})$');
-                    if (v == null || v.isEmpty) return 'Please enter a valid Sri Lankan NIC';
-                    if (!nicRegex.hasMatch(v.trim())) return 'Please enter a valid Sri Lankan NIC';
+                    if (v == null || v.isEmpty)
+                      return 'Please enter a valid Sri Lankan NIC';
+                    if (!nicRegex.hasMatch(v.trim()))
+                      return 'Please enter a valid Sri Lankan NIC';
                     return null;
                   },
                 ),
@@ -634,4 +636,3 @@ class _AssistantRegState extends State<AssistantReg> {
     return map;
   }
 }
-

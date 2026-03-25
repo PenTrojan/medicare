@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
-import 'package:medicare/screens/assistant/assistant_dashboard.dart'
-    as assistant_dashboard;
-import 'package:medicare/screens/seeker/seeker_dashboard.dart'
-    as seeker_dashboard;
+import 'package:medicare/screens/assistant/assistant_main.dart';
+import 'package:medicare/screens/seeker/seeker_main.dart';
 import 'package:medicare/services/auth_service.dart';
 import 'package:medicare/models/app_user.dart';
 import 'package:medicare/screens/role_picker.dart';
@@ -57,7 +55,6 @@ class AuthGate extends StatelessWidget {
 
         // real time watching for sign in status
         return StreamBuilder<AppUser?>(
-
           //  get user data using the appUserStream method from the authService
           stream: authService.appUserStream(snapshot.data!),
 
@@ -71,7 +68,7 @@ class AuthGate extends StatelessWidget {
 
             // if user isn't anonymous but also isn't registered create a new user
             if (userSnapshot.data == null) {
-              return const RolePicker();   
+              return const RolePicker();
             }
 
             final AppUser appUser = userSnapshot.data!;
@@ -85,12 +82,12 @@ class AuthGate extends StatelessWidget {
               if (!appUser.registrationComplete) {
                 return const assistant_reg.AssistantReg();
               }
-              return const assistant_dashboard.AssistantDash();
+              return const AssistantMain();
             } else if (appUser is Seeker) {
-                if (!appUser.registrationComplete && !appUser.isGuest) {
-                  return const seeker_reg.SeekerReg();
-                }
-              return const seeker_dashboard.SeekerDash();
+              if (!appUser.registrationComplete && !appUser.isGuest) {
+                return const seeker_reg.SeekerReg();
+              }
+              return const SeekerMain();
             }
 
             return const Scaffold(

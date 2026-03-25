@@ -23,7 +23,7 @@ abstract class AppUser {
 
   // ENCAPSULATION =================================================
   final String _uid;
-  final String? _displayName; //Nullable for guests
+  String? _displayName; //Nullable for guests
   final String? _email; //Nullable for guests
   bool _registrationComplete = false;
 
@@ -275,5 +275,13 @@ class Seeker extends AppUser {
       'registrationComplete': _registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  void updateRegistrationDetails({
+    required String displayName,
+    required bool registrationComplete,
+  }) {
+    _displayName = displayName;
+    _registrationComplete = registrationComplete;
   }
 }
