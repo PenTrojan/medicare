@@ -8,6 +8,7 @@ import 'package:medicare/models/app_user.dart';
 import 'package:medicare/models/assistant.dart';
 import 'package:medicare/services/auth_service.dart';
 import 'package:medicare/services/image_upload_service.dart';
+import 'package:medicare/widgets/skill_selector.dart';
 
 class AssistantReg extends StatefulWidget {
   const AssistantReg({super.key});
@@ -27,7 +28,7 @@ class _AssistantRegState extends State<AssistantReg> {
   final _addressController = TextEditingController();
   final _bioController = TextEditingController();
   final _experienceController = TextEditingController();
-  final _skillController = TextEditingController();
+  //final _skillController = TextEditingController();
   final _ageController = TextEditingController();
   final _rateController = TextEditingController();
 
@@ -206,6 +207,7 @@ class _AssistantRegState extends State<AssistantReg> {
     setState(() => _isSaving = true);
     try {
       assistant.updateRegistrationDetails(
+        displayName: _nameController.text.trim(),
         nic: _nicController.text.trim(),
         nicImageUrl: _nicImageUrl,
         address: _addressController.text.trim(),
@@ -424,7 +426,27 @@ class _AssistantRegState extends State<AssistantReg> {
                 ),
 
                 const SizedBox(height: 10),
-                _buildSkillInput(),
+                SkillSelector(
+                  selectedSkills: _skills,
+                  onSkillToggled: (skill, isSelected) {
+                    setState(() {
+                      if (isSelected) {
+                        _skills.add(skill);
+                      } else {
+                        _skills.remove(skill);
+                      }
+                    });
+                  },
+                ),
+
+                if (_skills.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      "Please select at least one skill",
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                  ),
 
                 const Divider(height: 40),
                 const Text(
@@ -553,7 +575,7 @@ class _AssistantRegState extends State<AssistantReg> {
     );
   }
 
-  Widget _buildSkillInput() {
+  /*Widget _buildSkillInput() {
     return Column(
       children: [
         Row(
@@ -588,7 +610,7 @@ class _AssistantRegState extends State<AssistantReg> {
         ),
       ],
     );
-  }
+  }*/
 
   Widget _buildProofGallery(String uid) {
     return Wrap(

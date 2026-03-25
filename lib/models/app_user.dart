@@ -69,5 +69,3 @@ abstract class AppUser {
   Future<void>
   saveToFirestore(); // abstract method for saving data to the database
 }
-
-// Inheritance =======================================================

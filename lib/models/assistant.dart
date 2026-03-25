@@ -106,6 +106,7 @@ class Assistant extends AppUser {
 
   // update details inside the object locally (before uploading to the firestore)
   void updateRegistrationDetails({
+    required String displayName,
     required String nic,
     required String? nicImageUrl,
     required String address,
@@ -123,6 +124,7 @@ class Assistant extends AppUser {
     required String? profilePicUrl,
     GeoPoint? location,
   }) {
+    this.displayName = displayName;
     _nic = nic;
     _nicImageUrl = nicImageUrl;
     _address = address;
@@ -132,7 +134,7 @@ class Assistant extends AppUser {
     _workingTimes = workingTimes;
     _proofText = proofText;
     _proofImageUrls = proofImageUrls;
-    registrationComplete = registrationComplete;
+    this.registrationComplete = registrationComplete;
     _gender = gender;
     _age = age;
     _dailyRate = dailyRate;

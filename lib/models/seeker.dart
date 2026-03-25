@@ -36,8 +36,8 @@ class Seeker extends AppUser {
     required String displayName,
     required bool registrationComplete,
   }) {
-    displayName = displayName;
-    registrationComplete = registrationComplete;
+    this.displayName = displayName;
+    this.registrationComplete = registrationComplete;
   }
 
   //isGuest is not sent
