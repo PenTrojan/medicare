@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:medicare/models/app_user.dart';
+import 'package:medicare/models/seeker.dart';
 import 'package:medicare/services/auth_service.dart';
 
 class SeekerReg extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medicare/screens/assistant/assistant_reg.dart';
-import 'package:medicare/profile.dart';
+import 'package:medicare/screens/shared/profile_page.dart';
 
 class AssistantDash extends StatefulWidget {
   const AssistantDash({super.key}); //constructor
@@ -37,7 +37,7 @@ class _AssistantDashState extends State<AssistantDash> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const Profile()),
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
                 );
               },
               child: const Text('Profile'),

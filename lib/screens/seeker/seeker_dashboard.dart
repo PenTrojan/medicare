@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:medicare/profile.dart';
+import 'package:medicare/screens/shared/profile_page.dart';
 import 'package:medicare/screens/assistant/assistant_reg.dart';
 
 class SeekerDash extends StatefulWidget {
@@ -37,7 +37,7 @@ class _SeekerDashState extends State<SeekerDash> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const Profile()),
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
                 );
               },
               child: const Text('Profile'),

@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:medicare/models/app_user.dart';
+import 'package:medicare/models/assistant.dart';
 import 'package:medicare/services/auth_service.dart';
 import 'package:medicare/services/image_upload_service.dart';
 

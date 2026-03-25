@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 // Seeker-specific pages
 import 'assistant_dashboard.dart';
 import 'invitations_page.dart';
+import 'myJob_page.dart';
 //import '_page.dart';
 
 // shared pages
@@ -21,7 +22,7 @@ class _AssistantMainState extends State<AssistantMain> {
 
   final List<Widget> _pages = [
     const InvitationsPage(), // Tab 1: focusing on Invitations
-    //const MyJobPage(), // Tab 2: The current active work
+    const MyJobPage(), // Tab 2: The current active work
     const MessagingPage(), // Tab 3: Communication
     const ProfilePage(), // Tab 4: Self-management
   ];
