@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'assistant.dart';
 import 'seeker.dart';
+import 'admin.dart';
 
 // enum definition for gender
 enum Gender { male, female, unspecified }
@@ -61,8 +62,10 @@ abstract class AppUser {
 
     if (role == 'assistant') {
       return Assistant.fromMap(doc.id, data);
-    } else {
+    } else if (role == 'seeker') {
       return Seeker.fromMap(doc.id, data);
+    } else if (role == 'admin') {
+      return Admin.fromMap(doc.id, data);
     }
   }
 
