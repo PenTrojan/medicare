@@ -3,10 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:medicare/screens/assistant/assistant_main.dart';
 import 'package:medicare/screens/seeker/seeker_main.dart';
+import 'package:medicare/screens/admin/admin_main.dart';
 import 'package:medicare/services/auth_service.dart';
 import 'package:medicare/models/app_user.dart';
 import 'package:medicare/models/assistant.dart';
 import 'package:medicare/models/seeker.dart';
+import 'package:medicare/models/admin.dart';
 import 'package:medicare/screens/role_picker.dart';
 import 'package:medicare/screens/assistant/assistant_reg.dart' as assistant_reg;
 import 'package:medicare/screens/seeker/seeker_reg.dart' as seeker_reg;
@@ -90,6 +92,8 @@ class AuthGate extends StatelessWidget {
                 return const seeker_reg.SeekerReg();
               }
               return const SeekerMain();
+            } else if (appUser is Admin) {
+              return const AdminMain();
             }
 
             return const Scaffold(
