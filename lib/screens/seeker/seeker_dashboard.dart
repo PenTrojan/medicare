@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'assistant_profile_page.dart';
+//import 'assistant_profile_page.dart';
 
 class SeekerDash extends StatefulWidget {
   const SeekerDash({super.key});
@@ -56,21 +56,18 @@ class _SeekerDashState extends State<SeekerDash> {
                     .where('role', isEqualTo: 'assistant')
                     .snapshots(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const Center(
-                        child: CircularProgressIndicator());
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   if (snapshot.hasError) {
                     return const Center(
-                        child: Text('Error loading assistants'));
+                      child: Text('Error loading assistants'),
+                    );
                   }
 
-                  if (!snapshot.hasData ||
-                      snapshot.data!.docs.isEmpty) {
-                    return const Center(
-                        child: Text('No assistants found'));
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text('No assistants found'));
                   }
 
                   final assistants = snapshot.data!.docs;
@@ -78,11 +75,11 @@ class _SeekerDashState extends State<SeekerDash> {
                   return ListView.builder(
                     itemCount: assistants.length,
                     itemBuilder: (context, index) {
-                      final data = assistants[index].data()
-                          as Map<String, dynamic>;
+                      final data =
+                          assistants[index].data() as Map<String, dynamic>;
 
                       return GestureDetector(
-                        onTap: () {
+                        /*onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -90,7 +87,7 @@ class _SeekerDashState extends State<SeekerDash> {
                                   AssistantProfilePage(data: data),
                             ),
                           );
-                        },
+                        },*/
                         child: _buildAssistantCard(data),
                       );
                     },
@@ -110,22 +107,19 @@ class _SeekerDashState extends State<SeekerDash> {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: ListTile(
         leading: CircleAvatar(
           radius: 28,
           backgroundColor: Colors.grey[200],
           child: ClipOval(
-            child: (imageUrl != null &&
-                    imageUrl.toString().isNotEmpty)
+            child: (imageUrl != null && imageUrl.toString().isNotEmpty)
                 ? Image.network(
                     imageUrl,
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
-                    errorBuilder:
-                        (context, error, stackTrace) {
+                    errorBuilder: (context, error, stackTrace) {
                       return const Icon(Icons.person);
                     },
                   )
@@ -134,15 +128,12 @@ class _SeekerDashState extends State<SeekerDash> {
         ),
         title: Text(
           data['name'] ?? 'No Name',
-          style:
-              const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(
-          data['experience'] ?? 'No experience info',
-        ),
-        trailing:
-            const Icon(Icons.arrow_forward_ios, size: 16),
+        subtitle: Text(data['experience'] ?? 'No experience info'),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       ),
     );
   }
 }
+

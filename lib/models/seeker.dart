@@ -8,6 +8,7 @@ import 'app_user.dart';
 class Seeker extends AppUser {
   bool _isGuest; // for anonymous users
   List<String> _activeJobIds;
+  String? _profilePicUrl;
 
   Seeker({
     required super.uid,
@@ -23,6 +24,7 @@ class Seeker extends AppUser {
       displayName: data['name'],
       email: data['email'],
     );
+    seeker._profilePicUrl = data['profilePicUrl'];
 
     seeker._activeJobIds = List<String>.from(data['activeJobIds'] ?? []);
     seeker.registrationComplete = data['registrationComplete'] ?? false;
@@ -31,10 +33,12 @@ class Seeker extends AppUser {
 
   // getter for isGuest
   bool get isGuest => _isGuest;
+  String? get profilePicUrl => _profilePicUrl;
 
   void updateRegistrationDetails({
     required String displayName,
     required bool registrationComplete,
+    required String? profilePicUrl,
   }) {
     this.displayName = displayName;
     this.registrationComplete = registrationComplete;
@@ -48,6 +52,7 @@ class Seeker extends AppUser {
       'name': displayName,
       'email': email,
       'role': 'seeker',
+      'profilePicUrl': _profilePicUrl,
       'activeJobIds': _activeJobIds,
       'registrationComplete': registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
