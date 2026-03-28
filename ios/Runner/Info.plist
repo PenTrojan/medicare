@@ -45,5 +45,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<key>NSLocationWhenInUseUsageDescription</key>
+<string>Medicare needs your location to find the nearest medical assistants.</string>
+<key>NSLocationAlwaysUsageDescription</key>
+<string>Medicare needs your location to track assistant arrival in the background.</string>
 </dict>
 </plist>

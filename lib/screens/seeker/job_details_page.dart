@@ -1,29 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../models/job.dart';
+import 'job_expanded.dart'; // Import the details page
 
 class SeekerJobDetailsPage extends StatelessWidget {
   const SeekerJobDetailsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+
     return Scaffold(
       appBar: AppBar(title: const Text("My Active Jobs")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.search, size: 80, color: Colors.grey),
-            const SizedBox(height: 20),
-            const Text(
-              "Finding your best match...",
-              style: TextStyle(fontSize: 16),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(20.0),
-              child: LinearProgressIndicator(),
-            ),
-            // When matches exist, this will be replaced by a ListView of matched Assistants
-          ],
-        ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('jobs')
+            .where('seekerId', isEqualTo: uid)
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError)
+            return Center(child: Text("Error: ${snapshot.error}"));
+          if (snapshot.connectionState == ConnectionState.waiting)
+            return const Center(child: CircularProgressIndicator());
+
+          final jobs = snapshot.data!.docs
+              .map((doc) => Job.fromFirestore(doc))
+              .toList();
+
+          if (jobs.isEmpty) {
+            return const Center(
+              child: Text("You haven't posted any jobs yet."),
+            );
+          }
+
+          return ListView.builder(
+            itemCount: jobs.length,
+            itemBuilder: (context, index) {
+              final job = jobs[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(job.patientName),
+                  subtitle: Text("Status: ${job.status.name.toUpperCase()}"),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => JobExpanded(job: job),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
