@@ -30,8 +30,28 @@ class SeekerJobDetailsPage extends StatelessWidget {
               .toList();
 
           if (jobs.isEmpty) {
-            return const Center(
-              child: Text("You haven't posted any jobs yet."),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.assignment_outlined,
+                    size: 80,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    "No active medical requests",
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text("Tap the '+' button to find an assistant."),
+                ],
+              ),
             );
           }
 

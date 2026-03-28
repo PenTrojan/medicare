@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// pending - still not matched with list
+// matching - matched list created
+// assigned - an assistant is assigned
+// completed - job finished
 enum JobStatus { pending, matching, assigned, completed }
 
 class Job {

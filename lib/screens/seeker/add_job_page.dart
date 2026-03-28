@@ -95,12 +95,12 @@ class _AddJobPageState extends State<AddJobPage> {
 
       await newJob.saveToFirestore();
 
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Job Posted! Matching in progress...")),
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Job Posted! Matching in progress...")),
+      );
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -212,4 +212,3 @@ class _AddJobPageState extends State<AddJobPage> {
     );
   }
 }
-

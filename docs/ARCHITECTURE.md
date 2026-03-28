@@ -5,6 +5,19 @@
 - main.dart runs the app and creates the login page.
 - 
 
+## Class and Object Architecture
+
+### User
+ * class is abstract.
+ * has 3 children.
+  1. Assistant
+  2. Seeker
+  3. Admin
+
+### Assistant
+
+
+
 ## UI Screen folder structure
 
 lib/
@@ -26,9 +39,9 @@ lib/
 
 ## TODO:
 
-* Make Skills Table and assistant pick skills from it
-* Fix Geopoint Access
-* Job Registration
+* Make Skills Table and assistant pick skills from it // Done
+* Fix Geopoint Access   // Done
+* Job Registration    // Done
 * Matching Logic
 * Top Match listing
 * Pick Assistant

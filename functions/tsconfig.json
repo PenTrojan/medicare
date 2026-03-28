@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
     "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
-    "moduleResolution": "nodenext",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017"
+    "target": "ES2022",         // Upgraded from es2017 for better Node 24 support
+    "skipLibCheck": true,      // Essential to ignore those 68 errors in node_modules
+    "lib": ["ES2022", "DOM"]   // Ensures basic environment types are loaded
   },
   "compileOnSave": true,
   "include": [
