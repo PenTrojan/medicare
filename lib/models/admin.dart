@@ -9,7 +9,12 @@ class Admin extends AppUser {
   @override
   String get role => 'admin';
 
-  Admin({required super.uid, super.displayName, super.email});
+  Admin({
+    required super.uid,
+    super.displayName,
+    super.email,
+    super.isSuspended = false,
+  });
 
   // Factory constructor from Firestore DocumentSnapshot
   factory Admin.fromFirestore(DocumentSnapshot doc) {
@@ -18,6 +23,7 @@ class Admin extends AppUser {
       uid: doc.id,
       displayName: data['name'] ?? data['displayName'],
       email: data['email'],
+      isSuspended: data['isSuspended'] ?? false,
     );
   }
 
@@ -27,6 +33,7 @@ class Admin extends AppUser {
       uid: id,
       displayName: data['name'] ?? data['displayName'],
       email: data['email'],
+      isSuspended: data['isSuspended'] ?? false,
     );
   }
 
@@ -37,6 +44,7 @@ class Admin extends AppUser {
       'name': displayName,
       'email': email,
       'role': role,
+      'isSuspended': isSuspended,
       'registrationComplete': registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
     };

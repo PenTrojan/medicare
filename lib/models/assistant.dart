@@ -32,6 +32,7 @@ class Assistant extends AppUser {
     required super.uid,
     required super.displayName,
     required super.email,
+    super.isSuspended = false,
   }) : _skills = [],
        _workingTimes = {},
        _proofText = [],
@@ -71,6 +72,7 @@ class Assistant extends AppUser {
     assistant._proofImageUrls = List<String>.from(data['proofImageUrls'] ?? []);
     assistant._isVerified = data['isVerified'] ?? false;
     assistant._isBooked = data['isBooked'] ?? false;
+    assistant.isSuspended = data['isSuspended'] ?? false;
 
     // safely casting as a map of lists
     if (data['workingTimes'] != null) {
@@ -162,6 +164,7 @@ class Assistant extends AppUser {
       'experienceLevel': _experienceLevel.name,
       'isVerified': _isVerified,
       'isBooked': _isBooked,
+      'isSuspended': isSuspended,
       'experience': _experienceDescription,
       'address': _address,
       'rating': _rating,

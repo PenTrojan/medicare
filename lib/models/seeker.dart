@@ -14,6 +14,7 @@ class Seeker extends AppUser {
     required super.uid,
     super.displayName,
     super.email,
+    super.isSuspended = false,
     bool isGuest = false,
   }) : _isGuest = isGuest,
        _activeJobIds = [];
@@ -28,6 +29,7 @@ class Seeker extends AppUser {
 
     seeker._activeJobIds = List<String>.from(data['activeJobIds'] ?? []);
     seeker.registrationComplete = data['registrationComplete'] ?? false;
+    seeker.isSuspended = data['isSuspended'] ?? false;
     return seeker;
   }
 
@@ -54,6 +56,7 @@ class Seeker extends AppUser {
       'role': 'seeker',
       'profilePicUrl': _profilePicUrl,
       'activeJobIds': _activeJobIds,
+      'isSuspended': isSuspended,
       'registrationComplete': registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
     });

@@ -29,21 +29,30 @@ abstract class AppUser {
   String? _displayName; //Nullable for guests
   final String? _email; //Nullable for guests
   bool _registrationComplete = false;
+  bool _isSuspended = false;
 
-  AppUser({required String uid, String? displayName, String? email})
+  AppUser({
+    required String uid,
+    String? displayName,
+    String? email,
+    bool isSuspended = false,
+  })
     : _uid = uid,
       _displayName = displayName,
-      _email = email;
+      _email = email,
+      _isSuspended = isSuspended;
 
   // getters allow for read only
   String get uid => _uid;
   String? get displayName => _displayName;
   String? get email => _email;
   bool get registrationComplete => _registrationComplete;
+  bool get isSuspended => _isSuspended;
 
   // setters to allow child classes to modify the values
   set registrationComplete(bool value) => _registrationComplete = value;
   set displayName(String? value) => _displayName = value;
+  set isSuspended(bool value) => _isSuspended = value;
 
   //=================================================================================
   //=============== Converting the output from the firestore to an object ===========

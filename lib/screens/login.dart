@@ -77,6 +77,32 @@ class AuthGate extends StatelessWidget {
 
             final AppUser appUser = userSnapshot.data!;
 
+            if (appUser.isSuspended) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('Account Suspended')),
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.block, size: 80, color: Colors.red),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Your account has been suspended by an administrator.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () {
+                          FirebaseAuth.instance.signOut();
+                        },
+                        child: const Text('Log Out'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
             // Polymorphic Routing ================================================
             //======================================================================
             // * if registration complete -> show the relevent dashboard
