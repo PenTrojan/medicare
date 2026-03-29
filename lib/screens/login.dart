@@ -93,7 +93,7 @@ class AuthGate extends StatelessWidget {
               }
               return const SeekerMain();
             } else if (appUser is Admin) {
-              return const AdminMain();
+              return const AdminMainScreen();
             }
 
             return const Scaffold(

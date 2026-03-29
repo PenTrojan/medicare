@@ -6,36 +6,55 @@ import 'app_user.dart';
 // ===========================================================================
 
 class Admin extends AppUser {
+  @override
+  String get role => 'admin';
+
   Admin({required super.uid, super.displayName, super.email});
 
-  factory Admin.fromMap(String id, Map<String, dynamic> data) {
-    final admin = Admin(
-      uid: id,
-      displayName: data['name'],
+  // Factory constructor from Firestore DocumentSnapshot
+  factory Admin.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    return Admin(
+      uid: doc.id,
+      displayName: data['name'] ?? data['displayName'],
       email: data['email'],
     );
-
-    admin.registrationComplete = data['registrationComplete'] ?? true;
-    return admin;
   }
 
-  void updateRegistrationDetails({
-    required String displayName,
-    required bool registrationComplete,
-  }) {
-    this.displayName = displayName;
-    this.registrationComplete = registrationComplete;
+  // Factory fromMap for AppUser.fromFirestore
+  factory Admin.fromMap(String id, Map<String, dynamic> data) {
+    return Admin(
+      uid: id,
+      displayName: data['name'] ?? data['displayName'],
+      email: data['email'],
+    );
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'name': displayName,
+      'email': email,
+      'role': role,
+      'registrationComplete': registrationComplete,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
   }
 
   @override
   Future<void> saveToFirestore() async {
-    await FirebaseFirestore.instance.collection('users').doc(uid).set({
-      'uid': uid,
-      'name': displayName,
-      'email': email,
-      'role': 'admin',
-      'registrationComplete': registrationComplete,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await FirebaseFirestore.instance.collection('users').doc(uid).set(toMap());
+  }
+
+  Future<void> updateRegistrationDetails({String? name, String? email}) async {
+    if (name != null) displayName = name;
+    // _email is final in AppUser, so this only updates Firestore
+    final updateData = <String, dynamic>{};
+    if (name != null) updateData['name'] = name;
+    if (email != null) updateData['email'] = email;
+    if (updateData.isNotEmpty) {
+      await FirebaseFirestore.instance.collection('users').doc(uid).update(updateData);
+    }
   }
 }

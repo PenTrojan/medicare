@@ -1,51 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:medicare/screens/admin/admin_dashboard.dart';
+import 'package:medicare/screens/admin/assistants_page.dart';
+import 'package:medicare/screens/admin/seekers_page.dart';
+import 'package:medicare/screens/shared/profile_page.dart';
+import 'package:medicare/screens/admin/admin_skills_page.dart';
 
-// Admin-specific pages
-//import 'admin_dashboard.dart';
-//import '_page.dart';
-
-// shared pages
-import '../shared/profile_page.dart';
-
-class AdminMain extends StatefulWidget {
-  const AdminMain({super.key});
+class AdminMainScreen extends StatefulWidget {
+  const AdminMainScreen({Key? key}) : super(key: key);
 
   @override
-  State<AdminMain> createState() => _AdminMainState();
+  State<AdminMainScreen> createState() => _AdminMainScreenState();
 }
 
-class _AdminMainState extends State<AdminMain> {
+class _AdminMainScreenState extends State<AdminMainScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    //const InvitationsPage(), // Tab 1: focusing on Invitations
-    //const MyJobPage(), // Tab 2: The current active work
-    //const MessagingPage(), // Tab 3: Communication
-    const ProfilePage(), // Tab 4: Self-management
+  static final List<Widget> _pages = <Widget>[
+    const AdminDashboard(),
+    const AssistantsPage(),
+    const SeekersPage(),
+    const AdminSkillsPage(),
+    const ProfilePage(),
   ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _pages),
+      body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: _onItemTapped,
         type: BottomNavigationBarType.fixed,
-        items: const [
+        items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.mail_outline),
-            label: 'Invitations',
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.medical_services),
-            label: 'Active Job',
+            label: 'Assistants',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Profile',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Seekers'),
+          BottomNavigationBarItem(icon: Icon(Icons.psychology), label: 'Skills'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );
