@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/assistant.dart';
-import '../../models/app_user.dart';
 import 'admin_assistant_verification.dart';
 
 class AdminAssistantProfilePage extends StatefulWidget {
@@ -31,8 +30,7 @@ class _AdminAssistantProfilePageState extends State<AdminAssistantProfilePage> {
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Center(child: Text('Assistant not found'));
           }
-          final Assistant assistant =
-              AppUser.fromFirestore(snapshot.data!) as Assistant;
+          final assistant = Assistant.fromFirestore(snapshot.data!);
           final name = assistant.displayName ?? 'No Name';
           final isVerified = assistant.isVerified;
           final isSuspended = assistant.isSuspended;
@@ -53,13 +51,13 @@ class _AdminAssistantProfilePageState extends State<AdminAssistantProfilePage> {
                   child: CircleAvatar(
                     radius: 48,
                     backgroundImage:
-                        assistant.profilePicUrl != null &&
-                            assistant.profilePicUrl!.isNotEmpty
-                        ? NetworkImage(assistant.profilePicUrl!)
+                        assistant.profileImageUrl != null &&
+                            assistant.profileImageUrl!.isNotEmpty
+                        ? NetworkImage(assistant.profileImageUrl!)
                         : null,
                     child:
-                        assistant.profilePicUrl == null ||
-                            assistant.profilePicUrl!.isEmpty
+                        assistant.profileImageUrl == null ||
+                            assistant.profileImageUrl!.isEmpty
                         ? const Icon(Icons.person, size: 48)
                         : null,
                   ),
