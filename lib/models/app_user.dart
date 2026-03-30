@@ -69,7 +69,7 @@ abstract class AppUser {
     final role = data['role'] ?? 'seeker';
 
     if (role == 'assistant') {
-      return Assistant.fromMap(doc.id, data);
+      return Assistant.fromFirestore(doc);
     } else if (role == 'seeker') {
       return Seeker.fromMap(doc.id, data);
     } else if (role == 'admin') {
