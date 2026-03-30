@@ -122,9 +122,9 @@ class _PaginatedFirebaseListState extends State<PaginatedFirebaseList> {
 
     if (widget.userType == 'assistant') {
       final assistant = Assistant.fromMap(doc.id, data);
-      final profileImageUrl = assistant.profileImageUrl;
-      final hasProfileImage =
-          profileImageUrl != null && profileImageUrl.trim().isNotEmpty;
+      final profilePicUrl = assistant.profilePicUrl;
+      final hasProfilePic =
+          profilePicUrl != null && profilePicUrl.trim().isNotEmpty;
 
       return Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -133,10 +133,10 @@ class _PaginatedFirebaseListState extends State<PaginatedFirebaseList> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundImage: hasProfileImage
-                ? NetworkImage(profileImageUrl!)
+            backgroundImage: hasProfilePic
+                ? NetworkImage(profilePicUrl!)
                 : null,
-            child: hasProfileImage
+            child: hasProfilePic
                 ? null
                 : const Icon(Icons.person, color: Colors.grey),
           ),
@@ -165,8 +165,9 @@ class _PaginatedFirebaseListState extends State<PaginatedFirebaseList> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundImage:
-              hasProfileImage ? NetworkImage(profileImageUrl!) : null,
+          backgroundImage: hasProfileImage
+              ? NetworkImage(profileImageUrl!)
+              : null,
           child: hasProfileImage
               ? null
               : const Icon(Icons.person, color: Colors.grey),

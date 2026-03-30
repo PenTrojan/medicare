@@ -103,8 +103,7 @@ class _LocalPaginatedListState extends State<LocalPaginatedList> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         dense: true,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: widget.userType == 'seeker'
             ? (() {
                 final seeker = Seeker.fromMap(doc.id, data);

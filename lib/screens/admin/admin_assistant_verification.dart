@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/assistant.dart';
+import '../../models/app_user.dart';
+
 import '../../models/verification_file.dart';
 import 'full_screen_file_viewer.dart';
 
@@ -31,7 +33,7 @@ class AdminAssistantVerificationPage extends StatelessWidget {
           );
         }
 
-        final assistant = Assistant.fromFirestore(snapshot.data!);
+        final assistant = AppUser.fromFirestore(snapshot.data!) as Assistant;
         final assistantName = assistant.displayName ?? 'Unknown Assistant';
 
         return Scaffold(
@@ -51,7 +53,7 @@ class AdminAssistantVerificationPage extends StatelessWidget {
                   child: _buildDocumentCard(
                     context,
                     file: VerificationFile(
-                      url: assistant.nicProofImageUrl ?? '',
+                      url: assistant.nicImageUrl ?? '',
                       displayName: 'NIC / Identity Proof',
                     ),
                   ),
@@ -62,7 +64,7 @@ class AdminAssistantVerificationPage extends StatelessWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                if (assistant.proofDocumentsUrls.isEmpty)
+                if (assistant.proofImageUrls.isEmpty)
                   const Text('No additional verification documents found.')
                 else
                   GridView.builder(
@@ -75,10 +77,10 @@ class AdminAssistantVerificationPage extends StatelessWidget {
                           mainAxisSpacing: 12,
                           childAspectRatio: 0.85,
                         ),
-                    itemCount: assistant.proofDocumentsUrls.length,
+                    itemCount: assistant.proofImageUrls.length,
                     itemBuilder: (context, index) {
                       final file = VerificationFile(
-                        url: assistant.proofDocumentsUrls[index],
+                        url: assistant.proofImageUrls[index],
                         displayName: 'Supporting Document ${index + 1}',
                       );
                       return _buildDocumentCard(context, file: file);
