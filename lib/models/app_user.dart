@@ -36,11 +36,10 @@ abstract class AppUser {
     String? displayName,
     String? email,
     bool isSuspended = false,
-  })
-    : _uid = uid,
-      _displayName = displayName,
-      _email = email,
-      _isSuspended = isSuspended;
+  }) : _uid = uid,
+       _displayName = displayName,
+       _email = email,
+       _isSuspended = isSuspended;
 
   // getters allow for read only
   String get uid => _uid;
@@ -70,7 +69,7 @@ abstract class AppUser {
     final role = data['role'] ?? 'seeker';
 
     if (role == 'assistant') {
-      return Assistant.fromMap(doc.id, data);
+      return Assistant.fromFirestore(doc);
     } else if (role == 'seeker') {
       return Seeker.fromMap(doc.id, data);
     } else if (role == 'admin') {
