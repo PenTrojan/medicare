@@ -1,5 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../../models/assistant.dart';
+import '../../models/app_user.dart';
+import 'admin_assistant_verification.dart';
 
 class AdminAssistantProfilePage extends StatefulWidget {
   final String uid;
@@ -28,19 +31,19 @@ class _AdminAssistantProfilePageState extends State<AdminAssistantProfilePage> {
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Center(child: Text('Assistant not found'));
           }
-          final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
-          final name = data['name'] ?? 'No Name';
-          final photoUrl = data['photoUrl'] as String?;
-          final isVerified = data['isVerified'] ?? false;
-          final isSuspended = data['isSuspended'] ?? false;
-          final nic = data['nic'] ?? 'N/A';
-          final gender = data['gender'] ?? 'N/A';
-          final age = data['age']?.toString() ?? 'N/A';
-          final address = data['address'] ?? 'N/A';
-          final bio = data['bio'] ?? 'N/A';
-          final dailyRate = data['dailyRate']?.toString() ?? 'N/A';
-          final experience = data['experience'] ?? 'N/A';
-          final skills = (data['skills'] as List?)?.cast<String>() ?? [];
+          final Assistant assistant =
+              AppUser.fromFirestore(snapshot.data!) as Assistant;
+          final name = assistant.displayName ?? 'No Name';
+          final isVerified = assistant.isVerified;
+          final isSuspended = assistant.isSuspended;
+          final nic = assistant.nic ?? 'N/A';
+          final gender = assistant.gender.name;
+          final age = assistant.age?.toString() ?? 'N/A';
+          final address = assistant.address ?? 'N/A';
+          final bio = assistant.bio ?? 'N/A';
+          final dailyRate = assistant.dailyRate?.toString() ?? 'N/A';
+          final experience = assistant.experienceDescription ?? 'N/A';
+          final skills = assistant.skills;
 
           return SingleChildScrollView(
             child: Column(
@@ -49,10 +52,14 @@ class _AdminAssistantProfilePageState extends State<AdminAssistantProfilePage> {
                 Center(
                   child: CircleAvatar(
                     radius: 48,
-                    backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-                        ? NetworkImage(photoUrl)
+                    backgroundImage:
+                        assistant.profilePicUrl != null &&
+                            assistant.profilePicUrl!.isNotEmpty
+                        ? NetworkImage(assistant.profilePicUrl!)
                         : null,
-                    child: photoUrl == null || photoUrl.isEmpty
+                    child:
+                        assistant.profilePicUrl == null ||
+                            assistant.profilePicUrl!.isEmpty
                         ? const Icon(Icons.person, size: 48)
                         : null,
                   ),
@@ -110,6 +117,30 @@ class _AdminAssistantProfilePageState extends State<AdminAssistantProfilePage> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.indigo,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                AdminAssistantVerificationPage(uid: widget.uid),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.assignment_ind),
+                      label: const Text('View Verification Details'),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 ListTile(title: const Text('NIC'), subtitle: Text(nic)),

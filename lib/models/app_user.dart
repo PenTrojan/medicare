@@ -36,11 +36,10 @@ abstract class AppUser {
     String? displayName,
     String? email,
     bool isSuspended = false,
-  })
-    : _uid = uid,
-      _displayName = displayName,
-      _email = email,
-      _isSuspended = isSuspended;
+  }) : _uid = uid,
+       _displayName = displayName,
+       _email = email,
+       _isSuspended = isSuspended;
 
   // getters allow for read only
   String get uid => _uid;
@@ -81,3 +80,4 @@ abstract class AppUser {
   Future<void>
   saveToFirestore(); // abstract method for saving data to the database
 }
+
