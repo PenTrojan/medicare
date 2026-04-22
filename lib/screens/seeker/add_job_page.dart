@@ -3,7 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/job.dart';
-import '../../widgets/skill_selector.dart'; // Ensure this path is correct
+import '../../models/app_user.dart'; // For Gender enum
+import '../../widgets/skill_selector.dart';
+import '../../widgets/availability_selector.dart'; // Our shared widget
 
 class AddJobPage extends StatefulWidget {
   const AddJobPage({super.key});
@@ -14,26 +16,72 @@ class AddJobPage extends StatefulWidget {
 
 class _AddJobPageState extends State<AddJobPage> {
   final _formKey = GlobalKey<FormState>();
+
+  // Controllers
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _conditionController = TextEditingController();
   final _addressController = TextEditingController();
+  final _maxRateController = TextEditingController();
 
+  // State
+  DateTimeRange? _selectedDateRange;
+  Gender _preferredGender = Gender.unspecified;
   GeoPoint? _jobLocation;
   bool _isLoading = false;
-
-  // This list will now be updated by the SkillSelector
   final List<String> _selectedSkills = [];
 
-  // Helper to update state when skills are toggled
+  // Availability State (to be passed to AvailabilitySelector)
+  late Map<String, bool> _dayEnabled;
+  late Map<String, TimeOfDay?> _dayStart;
+  late Map<String, TimeOfDay?> _dayEnd;
+
+  @override
+  void initState() {
+    super.initState();
+    final weekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    _dayEnabled = {for (var d in weekdays) d: false};
+    _dayStart = {for (var d in weekdays) d: null};
+    _dayEnd = {for (var d in weekdays) d: null};
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _ageController.dispose();
+    _conditionController.dispose();
+    _addressController.dispose();
+    _maxRateController.dispose();
+    super.dispose();
+  }
+
   void _handleSkillToggled(String skill, bool isSelected) {
     setState(() {
-      if (isSelected) {
-        if (!_selectedSkills.contains(skill)) _selectedSkills.add(skill);
-      } else {
-        _selectedSkills.remove(skill);
+      isSelected ? _selectedSkills.add(skill) : _selectedSkills.remove(skill);
+    });
+  }
+
+  // Same logic as AssistantReg to ensure matching string formats
+  Map<String, List<String>> _generateWorkingTimesMap() {
+    Map<String, List<String>> map = {};
+    _dayEnabled.forEach((day, enabled) {
+      if (enabled && _dayStart[day] != null && _dayEnd[day] != null) {
+        final startH = _dayStart[day]!.hour.toString().padLeft(2, '0');
+        final startM = _dayStart[day]!.minute.toString().padLeft(2, '0');
+        final endH = _dayEnd[day]!.hour.toString().padLeft(2, '0');
+        final endM = _dayEnd[day]!.minute.toString().padLeft(2, '0');
+        map[day] = ["$startH:$startM", "$endH:$endM"];
       }
     });
+    return map;
   }
 
   Future<void> _getLocation() async {
@@ -41,11 +89,10 @@ class _AddJobPageState extends State<AddJobPage> {
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 8),
       );
-      setState(() {
-        _jobLocation = GeoPoint(position.latitude, position.longitude);
-      });
+      setState(
+        () => _jobLocation = GeoPoint(position.latitude, position.longitude),
+      );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -60,16 +107,22 @@ class _AddJobPageState extends State<AddJobPage> {
 
     if (_jobLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please set the job location first.")),
+        const SnackBar(content: Text("Please set the job location")),
       );
       return;
     }
 
-    if (_selectedSkills.isEmpty) {
+    if (_selectedDateRange == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please select at least one required skill."),
-        ),
+        const SnackBar(content: Text("Please select a date range")),
+      );
+      return;
+    }
+
+    final workingTimes = _generateWorkingTimesMap();
+    if (workingTimes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select required working hours")),
       );
       return;
     }
@@ -78,29 +131,26 @@ class _AddJobPageState extends State<AddJobPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) throw Exception("User not logged in");
-
       final newJob = Job(
         id: '',
-        seekerId: user.uid,
+        seekerId: user!.uid,
         patientName: _nameController.text.trim(),
         patientAge: int.parse(_ageController.text.trim()),
         patientCondition: _conditionController.text.trim(),
         address: _addressController.text.trim(),
         location: _jobLocation!,
-        requiredSkills: _selectedSkills, // Now uses the live selected list
+        requiredSkills: _selectedSkills,
+        startDate: _selectedDateRange!.start,
+        endDate: _selectedDateRange!.end,
+        workingTimes: workingTimes,
+        maxDailyRate: int.parse(_maxRateController.text.trim()),
+        preferredGender: _preferredGender,
         createdAt: DateTime.now(),
         status: JobStatus.pending,
       );
 
       await newJob.saveToFirestore();
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Job Posted! Matching in progress...")),
-      );
-      Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -126,70 +176,113 @@ class _AddJobPageState extends State<AddJobPage> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: "Patient Name",
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) => v!.isEmpty ? "Required" : null,
+                  _buildTextField(
+                    _nameController,
+                    "Patient Name",
+                    Icons.person,
                   ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _ageController,
-                    decoration: const InputDecoration(
-                      labelText: "Age",
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (v) => v!.isEmpty ? "Required" : null,
+                  _buildTextField(
+                    _ageController,
+                    "Age",
+                    Icons.cake,
+                    isNumber: true,
                   ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _addressController,
-                    decoration: const InputDecoration(
-                      labelText: "Full Address",
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) => v!.isEmpty ? "Required" : null,
+                  _buildTextField(
+                    _addressController,
+                    "Full Address",
+                    Icons.home,
                   ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: _conditionController,
-                    decoration: const InputDecoration(
-                      labelText: "Medical Condition / Notes",
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
+                  _buildTextField(
+                    _conditionController,
+                    "Medical Condition",
+                    Icons.medical_services,
+                    maxLines: 2,
                   ),
-                  const SizedBox(height: 25),
 
-                  // Integrated Skill Selector
+                  const Divider(height: 40),
+                  const Text(
+                    "Matching Preferences",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 15),
+
+                  DropdownButtonFormField<Gender>(
+                    value: _preferredGender,
+                    decoration: const InputDecoration(
+                      labelText: "Preferred Gender",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.wc),
+                    ),
+                    items: Gender.values
+                        .map(
+                          (g) => DropdownMenuItem(
+                            value: g,
+                            child: Text(g.name.toUpperCase()),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) => setState(() => _preferredGender = val!),
+                  ),
+                  const SizedBox(height: 15),
+                  _buildTextField(
+                    _maxRateController,
+                    "Max Daily Budget (Rs)",
+                    Icons.payments,
+                    isNumber: true,
+                  ),
+
+                  const SizedBox(height: 10),
                   SkillSelector(
                     selectedSkills: _selectedSkills,
                     onSkillToggled: _handleSkillToggled,
                   ),
 
-                  const SizedBox(height: 25),
+                  const Divider(height: 40),
+                  const Text(
+                    "Schedule",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
 
-                  // Location Selector
                   ListTile(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    title: const Text("Select Date Range"),
+                    subtitle: Text(
+                      _selectedDateRange == null
+                          ? "Not Set"
+                          : "${_selectedDateRange!.start.toString().split(' ')[0]} to ${_selectedDateRange!.end.toString().split(' ')[0]}",
                     ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDateRangePicker(
+                        context: context,
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null)
+                        setState(() => _selectedDateRange = picked);
+                    },
+                  ),
+
+                  AvailabilitySelector(
+                    dayEnabled: _dayEnabled,
+                    dayStart: _dayStart,
+                    dayEnd: _dayEnd,
+                    onChanged: (day, enabled, start, end) {
+                      setState(() {
+                        _dayEnabled[day] = enabled;
+                        _dayStart[day] = start;
+                        _dayEnd[day] = end;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 20),
+                  ListTile(
                     tileColor: _jobLocation == null
                         ? Colors.red[50]
                         : Colors.green[50],
                     title: const Text("Set Precise Job Location"),
-                    subtitle: Text(
-                      _jobLocation == null
-                          ? "Required for finding nearby assistants"
-                          : "Location Captured",
-                    ),
                     trailing: Icon(
-                      _jobLocation == null
-                          ? Icons.location_off
-                          : Icons.my_location,
+                      Icons.my_location,
                       color: _jobLocation == null ? Colors.red : Colors.green,
                     ),
                     onTap: _getLocation,
@@ -199,16 +292,36 @@ class _AddJobPageState extends State<AddJobPage> {
                   ElevatedButton(
                     onPressed: _submitJob,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      minimumSize: const Size(double.infinity, 50),
                     ),
-                    child: const Text(
-                      "Post Job & Find Assistants",
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    child: const Text("Post Job & Start Matching"),
                   ),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    int maxLines = 1,
+    bool isNumber = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: const OutlineInputBorder(),
+        ),
+        validator: (v) => v!.isEmpty ? "Required" : null,
+      ),
     );
   }
 }

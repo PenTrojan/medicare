@@ -4,6 +4,8 @@ import '../../models/assistant.dart';
 import '../../models/seeker.dart';
 import '../../models/admin.dart';
 
+import '../../services/dummy_data_service.dart';
+
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
 
@@ -12,6 +14,21 @@ class AdminDashboard extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
+        // =================== Dummy data Button ==============================
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt),
+            tooltip: "Seed Assistants",
+            onPressed: () async {
+              await DummyDataService.seedAssistants();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("50 Assistants Seeded!")),
+              );
+            },
+          ),
+        ],
+
+        // ===============================================
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -21,10 +38,14 @@ class AdminDashboard extends StatelessWidget {
           children: [
             // --- TOP METRICS ---
             StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .snapshots(),
               builder: (context, userSnapshot) {
                 return StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('jobs').snapshots(),
+                  stream: FirebaseFirestore.instance
+                      .collection('jobs')
+                      .snapshots(),
                   builder: (context, jobSnapshot) {
                     int assistantCount = 0;
                     int seekerCount = 0;
@@ -34,17 +55,27 @@ class AdminDashboard extends StatelessWidget {
                     // Use model classes for users
                     if (userSnapshot.hasData) {
                       for (var doc in userSnapshot.data!.docs) {
-                        final role = (doc.data() as Map<String, dynamic>)['role'] ?? '';
+                        final role =
+                            (doc.data() as Map<String, dynamic>)['role'] ?? '';
                         if (role == 'assistant') {
-                          final assistant = Assistant.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+                          final assistant = Assistant.fromMap(
+                            doc.id,
+                            doc.data() as Map<String, dynamic>,
+                          );
                           assistantCount++;
                           if (!assistant.isVerified) pendingCount++;
                         } else if (role == 'seeker') {
-                          final seeker = Seeker.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+                          final seeker = Seeker.fromMap(
+                            doc.id,
+                            doc.data() as Map<String, dynamic>,
+                          );
                           seekerCount++;
                         } else if (role == 'admin') {
                           // Optionally instantiate Admin if needed
-                          final admin = Admin.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+                          final admin = Admin.fromMap(
+                            doc.id,
+                            doc.data() as Map<String, dynamic>,
+                          );
                         }
                       }
                     }
@@ -63,17 +94,45 @@ class AdminDashboard extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Expanded(child: _buildStatCard('Total Assistants', assistantCount.toString(), Icons.medical_services, Colors.blue)),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Total Assistants',
+                                assistantCount.toString(),
+                                Icons.medical_services,
+                                Colors.blue,
+                              ),
+                            ),
                             const SizedBox(width: 10),
-                            Expanded(child: _buildStatCard('Total Seekers', seekerCount.toString(), Icons.people, Colors.green)),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Total Seekers',
+                                seekerCount.toString(),
+                                Icons.people,
+                                Colors.green,
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            Expanded(child: _buildStatCard('Active Jobs', activeJobsCount.toString(), Icons.work, Colors.orange)),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Active Jobs',
+                                activeJobsCount.toString(),
+                                Icons.work,
+                                Colors.orange,
+                              ),
+                            ),
                             const SizedBox(width: 10),
-                            Expanded(child: _buildStatCard('Pending Verifications', pendingCount.toString(), Icons.pending_actions, Colors.purple)),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Pending Verifications',
+                                pendingCount.toString(),
+                                Icons.pending_actions,
+                                Colors.purple,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -84,14 +143,14 @@ class AdminDashboard extends StatelessWidget {
             ),
 
             const SizedBox(height: 30),
-            
+
             // --- RECENT JOBS SECTION ---
             const Text(
               "Live Activity: Recent Jobs",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            
+
             StreamBuilder<QuerySnapshot>(
               // Fetch only the 5 most recent jobs
               stream: FirebaseFirestore.instance
@@ -106,7 +165,7 @@ class AdminDashboard extends StatelessWidget {
                 if (snapshot.hasError) {
                   return const Text("Waiting for new jobs...");
                 }
-                
+
                 final docs = snapshot.data?.docs ?? [];
                 if (docs.isEmpty) {
                   return const Card(
@@ -119,21 +178,36 @@ class AdminDashboard extends StatelessWidget {
 
                 return ListView.builder(
                   shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(), // Prevents scrolling conflicts
+                  physics:
+                      const NeverScrollableScrollPhysics(), // Prevents scrolling conflicts
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final data = docs[index].data() as Map<String, dynamic>? ?? {};
+                    final data =
+                        docs[index].data() as Map<String, dynamic>? ?? {};
                     return Card(
                       elevation: 1,
                       margin: const EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: CircleAvatar(
                           backgroundColor: Colors.blue[50],
-                          child: const Icon(Icons.work_outline, color: Colors.blue),
+                          child: const Icon(
+                            Icons.work_outline,
+                            color: Colors.blue,
+                          ),
                         ),
-                        title: Text(data['patientName'] ?? 'Unknown Patient', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(data['medicalCondition'] ?? 'No condition listed', maxLines: 1, overflow: TextOverflow.ellipsis),
-                        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+                        title: Text(
+                          data['patientName'] ?? 'Unknown Patient',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          data['medicalCondition'] ?? 'No condition listed',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.grey,
+                        ),
                       ),
                     );
                   },
@@ -147,7 +221,12 @@ class AdminDashboard extends StatelessWidget {
   }
 
   // --- Helper Widget to build the cards safely ---
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -159,17 +238,26 @@ class AdminDashboard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 12),
-            FittedBox( // Shrinks text if it's too long
+            FittedBox(
+              // Shrinks text if it's too long
               fit: BoxFit.scaleDown,
               child: Text(
                 title,
-                style: const TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ],
         ),
@@ -177,3 +265,4 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 }
+

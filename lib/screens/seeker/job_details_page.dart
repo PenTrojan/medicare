@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/job.dart';
 import 'job_expanded.dart'; // Import the details page
+import '../../services/dummy_data_service.dart';
 
 class SeekerJobDetailsPage extends StatelessWidget {
   const SeekerJobDetailsPage({super.key});
@@ -12,13 +13,41 @@ class SeekerJobDetailsPage extends StatelessWidget {
     final String uid = FirebaseAuth.instance.currentUser!.uid;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("My Active Jobs")),
+      appBar: AppBar(
+        title: const Text("My Active Jobs"),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.factory_outlined,
+            ), // Factory icon for seeding
+            tooltip: "Seed Dummy Data",
+            onPressed: () async {
+              // Show a loading snackbar or just trigger the service
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Seeding dummy jobs..."),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+
+              await DummyDataService.seedJobs(uid);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Dummy Jobs Seeded!")),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('jobs')
             .where('seekerId', isEqualTo: uid)
             .orderBy('createdAt', descending: true)
-            .snapshots(),
+            .snapshots(includeMetadataChanges: true),
         builder: (context, snapshot) {
           if (snapshot.hasError)
             return Center(child: Text("Error: ${snapshot.error}"));

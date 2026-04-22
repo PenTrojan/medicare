@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'app_user.dart'; // for gender enum
 
 // pending - still not matched with list
 // matching - matched list created
@@ -15,7 +16,13 @@ class Job {
   final String address;
   final GeoPoint location;
   final List<String> requiredSkills;
-  //final double offeredRate;
+
+  final DateTime startDate;
+  final DateTime endDate;
+  final Map<String, List<String>> workingTimes;
+  final int maxDailyRate;
+  final Gender preferredGender;
+
   final DateTime createdAt;
   JobStatus status;
 
@@ -31,7 +38,11 @@ class Job {
     required this.address,
     required this.location,
     required this.requiredSkills,
-    //required this.offeredRate,
+    required this.startDate,
+    required this.endDate,
+    required this.workingTimes,
+    required this.maxDailyRate,
+    required this.preferredGender,
     required this.createdAt,
     this.status = JobStatus.pending,
     this.topMatches = const [],
@@ -40,6 +51,14 @@ class Job {
   // Create a Job from a Firestore Document
   factory Job.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    Map<String, List<String>> parsedTimes = {};
+    if (data['workingTimes'] != null) {
+      parsedTimes = (data['workingTimes'] as Map).map(
+        (key, value) => MapEntry(key.toString(), List<String>.from(value)),
+      );
+    }
+
     return Job(
       id: doc.id,
       seekerId: data['seekerId'] ?? '',
@@ -49,9 +68,21 @@ class Job {
       address: data['address'] ?? '',
       location: data['location'] as GeoPoint,
       requiredSkills: List<String>.from(data['requiredSkills'] ?? []),
-      //offeredRate: (data['offeredRate'] ?? 0).toDouble(),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      status: JobStatus.values.firstWhere((e) => e.name == data['status']),
+
+      startDate: (data['startDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      endDate: (data['endDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+
+      workingTimes: parsedTimes,
+      maxDailyRate: data['maxDailyRate'] ?? 0,
+      preferredGender: Gender.values.firstWhere(
+        (e) => e.name == (data['preferredGender'] ?? 'unspecified'),
+        orElse: () => Gender.unspecified,
+      ),
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      status: JobStatus.values.firstWhere(
+        (e) => e.name == data['status'],
+        orElse: () => JobStatus.pending,
+      ),
       topMatches: List<Map<String, dynamic>>.from(data['topMatches'] ?? []),
     );
   }
@@ -66,8 +97,16 @@ class Job {
       'address': address,
       'location': location,
       'requiredSkills': requiredSkills,
-      //'offeredRate': offeredRate,
-      'createdAt': FieldValue.serverTimestamp(), // Set the saved time
+      'startDate': Timestamp.fromDate(startDate),
+      'endDate': Timestamp.fromDate(endDate),
+      'workingTimes': workingTimes, // Stored as a Map in Firestore
+      'maxDailyRate': maxDailyRate,
+      'preferredGender': preferredGender.name,
+      'createdAt': id.isEmpty
+          ? FieldValue.serverTimestamp()
+          : Timestamp.fromDate(
+              createdAt,
+            ), // Set the saved time - Dont overwrite if already exista
       'status': status.name,
       'topMatches': topMatches,
     };
@@ -81,7 +120,7 @@ class Job {
       await collection.add(toMap());
     } else {
       // Update existing job
-      await collection.doc(id).update(toMap());
+      await collection.doc(id).set(toMap(), SetOptions(merge: true));
     }
   }
 }
