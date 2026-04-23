@@ -39,6 +39,41 @@ function getDistance(
   return R * c;
 }
 
+/**
+ * Checks if assistant availability fully covers job requirements.
+ * Logic: Assistant must work all job days, and the job window must
+ * fit entirely within the assistant's window.
+ *
+ * @param {any} jobTimes - Map of days to [start, end] times.
+ * @param {any} assistantTimes - Map of days to [start, end] times.
+ * @return {boolean} True if schedule is compatible.
+ */
+function isTimeCompatible(
+  jobTimes: Record<string, string[]>,
+  assistantTimes: Record<string, string[]>,
+): boolean {
+  // Null checks
+  if (!jobTimes || !assistantTimes) return false;
+
+  // Loops through each day
+  for (const day in jobTimes) {
+    // This if statement satisfies the guard-for-in rule
+    if (Object.prototype.hasOwnProperty.call(jobTimes, day)) {
+      // If the assistant doesnt work on this day return false
+      if (!assistantTimes[day]) return false;
+
+      const [jStart, jEnd] = jobTimes[day];
+      const [aStart, aEnd] = assistantTimes[day];
+
+      // String comparison works because times are padded (e.g., "08:00")
+      // If Job starts EARLIER than Assistant can start -> Incompatible
+      // If Job ends LATER than Assistant can finish -> Incompatible
+      if (jStart < aStart || jEnd > aEnd) return false;
+    }
+  }
+  return true;
+}
+
 export const matchJobToAssistants = onDocumentCreated(
   "jobs/{jobId}",
   async (event) => {
@@ -46,6 +81,8 @@ export const matchJobToAssistants = onDocumentCreated(
     if (!snapshot) return;
 
     const jobData = snapshot.data();
+    const jobId = event.params.jobId;
+
     // 1. Check if location exists before continuing
     if (!jobData.location) {
       console.warn(
@@ -56,66 +93,143 @@ export const matchJobToAssistants = onDocumentCreated(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
-    const jobId = event.params.jobId;
 
-    // Extract Job details with defaults
+    // 2. Extract Job details with defaults
     const jobLocation = jobData.location as admin.firestore.GeoPoint;
     const requiredSkills: string[] = jobData.requiredSkills || [];
 
     try {
-      // 1. Fetch all assistants
+      // 3. Fetch all assistants
       const assistantsSnap = await db
         .collection("users")
         .where("role", "==", "assistant")
         .get();
 
-      const potentialMatches: AssistantMatch[] = [];
+      const distanceMap = new Map<string, number>();
 
-      assistantsSnap.forEach((doc) => {
+      // 4. Stage 1 filtering  ===============================================
+      // Filter by location, budget, gender and
+      // general schedule (weekly working hours)
+      const nearbyCandidates = assistantsSnap.docs.filter((doc) => {
         const assistant = doc.data();
+
+        // i. HARD FILTERS (Budget & Gender) =============
+        // Computationally cheapest filter (simple comparisons)
+
+        // Checking if daily rate is less than the max
+        // daily rate given by the seeker
+        if (
+          jobData.maxDailyRate &&
+          assistant.dailyRate > jobData.maxDailyRate
+        ) {
+          return false;
+        }
+
+        // Checks if preferred gender matches
+        if (
+          jobData.preferredGender &&
+          jobData.preferredGender !== "unspecified" &&
+          assistant.gender !== jobData.preferredGender
+        ) {
+          return false;
+        }
+        // ===============================================
+
+        // ii. SCHEDULE FILTER =============================
+        // moderate computational cost
+
+        if (!isTimeCompatible(jobData.workingTimes, assistant.workingTimes)) {
+          return false;
+        }
+        // =================================================
+
+        // iii. GEOLOCATION FILTER ========================
+        // Expensive trigonometry math
+
         const assistantLoc = assistant.location as
           | admin.firestore.GeoPoint
           | undefined;
 
-        if (assistantLoc) {
-          // 2. Calculate Distance
-          const dist = getDistance(
-            jobLocation.latitude,
-            jobLocation.longitude,
-            assistantLoc.latitude,
-            assistantLoc.longitude,
-          );
+        if (!assistantLoc) return false;
 
-          // 3. Skill Matching
-          const assistantSkills: string[] = assistant.skills || [];
-          const matchingSkills = requiredSkills.filter((skill) =>
-            assistantSkills.includes(skill),
-          );
+        // Calculate Distance
+        const dist = getDistance(
+          jobLocation.latitude,
+          jobLocation.longitude,
+          assistantLoc.latitude,
+          assistantLoc.longitude,
+        );
 
-          // Logic: Include if they have skills OR are within 15km
-          if (matchingSkills.length > 0 || dist < 15) {
-            potentialMatches.push({
-              assistantId: doc.id,
-              name: assistant.name || "Assistant",
-              distance: Number(dist.toFixed(2)),
-              matchScore: matchingSkills.length,
-            });
-          }
+        // Only suggest assistants within 40km of Job location
+        if (dist > 40) return false;
+
+        distanceMap.set(doc.id, dist); // Store for sorting later
+        return true;
+      });
+      // ==================================================
+
+      // 5. Stage 2 filtering ==================================================
+      // (Booking and skill check)
+      const matchChecks = nearbyCandidates.map(async (doc) => {
+        const assistant = doc.data();
+        const assistantId = doc.id;
+
+        // Check booking dates from the database
+        // Expensive due to reading files
+        const conflictSnap = await db
+          .collection("users")
+          .doc(assistantId)
+          .collection("bookings")
+          .where("status", "==", "confirmed")
+          .where("endDate", ">=", jobData.startDate)
+          .get();
+
+        // Logical overlap check
+        const isBusy = conflictSnap.docs.some((bDoc) => {
+          const bData = bDoc.data();
+          return bData.startDate <= jobData.endDate;
+        });
+
+        if (isBusy) return null;
+
+        // Skill Matching score
+        const assistantSkills: string[] = assistant.skills || [];
+        const matchingSkills = requiredSkills.filter((skill) =>
+          assistantSkills.includes(skill),
+        );
+
+        const dist = distanceMap.get(assistantId) || 0;
+
+        // Logic: Include if they have skills OR are within 15km
+        if (matchingSkills.length > 0 || dist < 15) {
+          return {
+            assistantId: doc.id,
+            name: assistant.name || "Assistant",
+            distance: Number(dist.toFixed(2)),
+            matchScore: matchingSkills.length,
+          };
         }
+        return null;
       });
 
-      // 4. Sort: Highest skill match first, then closest distance
-      potentialMatches.sort((a, b) => {
+      // Execute all sub-collection queries in parallel
+      const results = await Promise.all(matchChecks);
+      const finalMatches = results.filter(
+        (m): m is AssistantMatch => m !== null,
+      );
+
+      // 6. Sort: Highest skill match first, then closest distance
+      finalMatches.sort((a, b) => {
         if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
         return a.distance - b.distance;
       });
 
-      // 5. Update Job with Top 5 matches
-      const top5 = potentialMatches.slice(0, 5);
+      // Update Job with Top 10 matches
+      const top10 = finalMatches.slice(0, 10);
 
       return snapshot.ref.update({
-        topMatches: top5,
-        status: "matching",
+        topMatches: top10,
+        status: top10.length > 0 ? "matching" : "no_matches",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     } catch (error) {

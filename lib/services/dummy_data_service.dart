@@ -72,8 +72,8 @@ class DummyDataService {
 
     for (int i = 0; i < 50; i++) {
       // 1. Randomize Location (Radius around Kurunegala)
-      double lat = 7.4818 + (random.nextDouble() - 0.5) * 0.15;
-      double lng = 80.3609 + (random.nextDouble() - 0.5) * 0.15;
+      double lat = 6.7951 + (random.nextDouble() - 0.5) * 0.15;
+      double lng = 79.9009 + (random.nextDouble() - 0.5) * 0.15;
 
       // 2. Randomize Skills (Select 2 to 6 unique skills)
       List<String> selectedSkills = (List<String>.from(
