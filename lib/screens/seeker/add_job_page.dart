@@ -150,13 +150,19 @@ class _AddJobPageState extends State<AddJobPage> {
       );
 
       await newJob.saveToFirestore();
-      if (mounted) Navigator.pop(context);
+
+      if (!mounted) return;
+
+      setState(() => _isLoading = false);
+
+      Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Failed to save: $e")));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to save: $e")));
+      }
     }
   }
 

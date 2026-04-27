@@ -37,6 +37,18 @@ lib/
 │   │   ├── messaging_page.dart     // Shared by both
 │   │   └── profile_page.dart       // Shared by both
 
+
+## Cloud functions file structure
+functions/
+├── src/
+│   ├── handlers/
+│   │   ├── jobs.ts      // matchJobToAssistants
+│   │   └── profiles.ts  // getAssistantPublicProfile
+│   ├── utils/
+│   │   └── helpers.ts   // getDistance, isTimeCompatible
+│   └── index.ts         // Main entry point (exports everything)
+
+
 ## TODO:
 
 * Make Skills Table and assistant pick skills from it // Done
