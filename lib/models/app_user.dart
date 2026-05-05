@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'assistant.dart';
 import 'seeker.dart';
 import 'admin.dart';
+import 'firestore_object.dart';
 
 // enum definition for gender
 enum Gender { male, female, unspecified }
@@ -19,7 +20,8 @@ enum ExperienceLevel {
 // ============================================================================
 
 // abstract class for users
-abstract class AppUser {
+// implements the firestore object interface
+abstract class AppUser implements FirestoreObject {
   // attributes common to all users
   // final -> cannot be changed
   // _ -> private
@@ -30,6 +32,10 @@ abstract class AppUser {
   final String? _email; //Nullable for guests
   bool _registrationComplete = false;
   bool _isSuspended = false;
+
+  // to satisfy the interface requirement
+  @override
+  String get id => _uid;
 
   AppUser({
     required String uid,
@@ -75,9 +81,13 @@ abstract class AppUser {
     } else if (role == 'admin') {
       return Admin.fromMap(doc.id, data);
     }
+
+    return null;
   }
 
-  Future<void>
-  saveToFirestore(); // abstract method for saving data to the database
-}
+  @override
+  Map<String, dynamic> toMap(); //every user must know how to turn itself to a map
 
+  @override
+  Future<void> saveToFirestore(); // abstract method for saving data to the database
+}

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'app_user.dart'; // for gender enum
+import 'firestore_object.dart';
 
 // pending - still not matched with list
 // matching - matched list created
@@ -7,8 +8,10 @@ import 'app_user.dart'; // for gender enum
 // completed - job finished
 enum JobStatus { pending, matching, assigned, completed }
 
-class Job {
+class Job implements FirestoreObject {
+  @override
   final String id;
+
   final String seekerId;
   final String patientName;
   final int patientAge;
@@ -88,6 +91,7 @@ class Job {
   }
 
   // Convert Job to Map for Firestore
+  @override
   Map<String, dynamic> toMap() {
     return {
       'seekerId': seekerId,
@@ -112,6 +116,7 @@ class Job {
     };
   }
 
+  @override
   Future<void> saveToFirestore() async {
     final collection = FirebaseFirestore.instance.collection('jobs');
 

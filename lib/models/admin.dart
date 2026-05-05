@@ -6,7 +6,6 @@ import 'app_user.dart';
 // ===========================================================================
 
 class Admin extends AppUser {
-  @override
   String get role => 'admin';
 
   Admin({
@@ -16,6 +15,7 @@ class Admin extends AppUser {
     super.isSuspended = false,
   });
 
+  /*
   // Factory constructor from Firestore DocumentSnapshot
   factory Admin.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
@@ -25,7 +25,7 @@ class Admin extends AppUser {
       email: data['email'],
       isSuspended: data['isSuspended'] ?? false,
     );
-  }
+  }*/
 
   // Factory fromMap for AppUser.fromFirestore
   factory Admin.fromMap(String id, Map<String, dynamic> data) {
@@ -35,6 +35,20 @@ class Admin extends AppUser {
       email: data['email'],
       isSuspended: data['isSuspended'] ?? false,
     );
+  }
+
+  Future<void> updateRegistrationDetails({String? name, String? email}) async {
+    if (name != null) displayName = name;
+    // _email is final in AppUser, so this only updates Firestore
+    final updateData = <String, dynamic>{};
+    if (name != null) updateData['name'] = name;
+    if (email != null) updateData['email'] = email;
+    if (updateData.isNotEmpty) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .update(updateData);
+    }
   }
 
   @override
@@ -53,16 +67,5 @@ class Admin extends AppUser {
   @override
   Future<void> saveToFirestore() async {
     await FirebaseFirestore.instance.collection('users').doc(uid).set(toMap());
-  }
-
-  Future<void> updateRegistrationDetails({String? name, String? email}) async {
-    if (name != null) displayName = name;
-    // _email is final in AppUser, so this only updates Firestore
-    final updateData = <String, dynamic>{};
-    if (name != null) updateData['name'] = name;
-    if (email != null) updateData['email'] = email;
-    if (updateData.isNotEmpty) {
-      await FirebaseFirestore.instance.collection('users').doc(uid).update(updateData);
-    }
   }
 }

@@ -147,8 +147,8 @@ class Assistant extends AppUser {
 
   // Polymorphism
   @override
-  Future<void> saveToFirestore() async {
-    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+  Map<String, dynamic> toMap() {
+    return {
       'uid': uid,
       'name': displayName,
       'email': email,
@@ -174,6 +174,11 @@ class Assistant extends AppUser {
       'proofImageUrls': _proofImageUrls,
       'registrationComplete': registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    };
+  }
+
+  @override
+  Future<void> saveToFirestore() async {
+    await FirebaseFirestore.instance.collection('users').doc(uid).set(toMap());
   }
 }

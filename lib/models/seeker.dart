@@ -46,10 +46,9 @@ class Seeker extends AppUser {
     this.registrationComplete = registrationComplete;
   }
 
-  //isGuest is not sent
   @override
-  Future<void> saveToFirestore() async {
-    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+  Map<String, dynamic> toMap() {
+    return {
       'uid': uid,
       'name': displayName,
       'email': email,
@@ -59,6 +58,13 @@ class Seeker extends AppUser {
       'isSuspended': isSuspended,
       'registrationComplete': registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
-    });
+    };
+  }
+
+  //isGuest is not sent
+
+  @override
+  Future<void> saveToFirestore() async {
+    await FirebaseFirestore.instance.collection('users').doc(uid).set(toMap());
   }
 }
