@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'assistant.dart';
 import 'seeker.dart';
@@ -64,25 +65,35 @@ abstract class AppUser implements FirestoreObject {
   //=================================================================================
 
   static AppUser? fromFirestore(DocumentSnapshot doc) {
-    // static factory method to create an object using the data in the databse
-    // if no entry found in the database return null
-    if (!doc.exists) return null;
+    try {
+      // static factory method to create an object using the data in the databse
+      // if no entry found in the database return null
+      if (!doc.exists) return null;
 
-    // convert to a map object
-    final data = doc.data() as Map<String, dynamic>;
+      // convert to a map object
+      final data = doc.data() as Map<String, dynamic>;
 
-    // default is seeker is something went wrong
-    final role = data['role'] ?? 'seeker';
+      // default is seeker is something went wrong
+      final role = data['role'] ?? 'seeker';
 
-    if (role == 'assistant') {
-      return Assistant.fromMap(doc.id, data);
-    } else if (role == 'seeker') {
-      return Seeker.fromMap(doc.id, data);
-    } else if (role == 'admin') {
-      return Admin.fromMap(doc.id, data);
+      if (role == 'assistant') {
+        return Assistant.fromMap(doc.id, data);
+      } else if (role == 'seeker') {
+        return Seeker.fromMap(doc.id, data);
+      } else if (role == 'admin') {
+        return Admin.fromMap(doc.id, data);
+      }
+
+      return null;
+    } catch (e, stacktrace) {
+      dev.log(
+        "❌ ERROR : Failed parsing user schema for document ID: [${doc.id}]",
+        name: "medicare.models.app_user",
+        error: e,
+        stackTrace: stacktrace,
+      );
+      return null;
     }
-
-    return null;
   }
 
   @override
