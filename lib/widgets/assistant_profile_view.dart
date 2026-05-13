@@ -1,13 +1,102 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class AssistantProfileView extends StatelessWidget {
+class AssistantProfileView extends StatefulWidget {
   final Map<String, dynamic> profile;
+  final String? jobId; // Non-null when coming from JobExpanded
+  final String seekerId;
 
-  const AssistantProfileView({super.key, required this.profile});
+  const AssistantProfileView({
+    super.key,
+    required this.profile,
+    this.jobId,
+    required this.seekerId,
+  });
+
+  @override
+  State<AssistantProfileView> createState() => _AssistantProfileViewState();
+}
+
+class _AssistantProfileViewState extends State<AssistantProfileView> {
+  bool _isSubmitting = false;
+
+  /// Backend-driven booking logic
+  Future<void> _handleBookingRequest() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    // 1. Auth Guard for Anonymous users
+    if (user == null || user.isAnonymous) {
+      _showAuthRequiredDialog();
+      return;
+    }
+
+    // 2. We only allow booking if we have a specific Job Context (JobExpanded)
+    if (widget.jobId == null) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      // Calls the backend function we discussed
+      await FirebaseFunctions.instance
+          .httpsCallable('requestAssistantBooking')
+          .call({
+            'jobId': widget.jobId,
+            'assistantId': widget.profile['assistantId'],
+          });
+
+      if (mounted) {
+        Navigator.pop(context); // Close BottomSheet
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Booking request sent successfully!")),
+        );
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Server Error: ${e.message}")));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("An unexpected error occurred.")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showAuthRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Sign In Required"),
+        content: const Text(
+          "You need a permanent account to book an assistant.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/register');
+            },
+            child: const Text("Sign In"),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Helper to safely format working times
+    final profile = widget.profile;
     final workingTimes = profile['workingTimes'] as Map<String, dynamic>? ?? {};
 
     return Container(
@@ -20,7 +109,6 @@ class AssistantProfileView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle for the BottomSheet
             Center(
               child: Container(
                 width: 40,
@@ -32,8 +120,6 @@ class AssistantProfileView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Header Section
             Row(
               children: [
                 CircleAvatar(
@@ -77,25 +163,19 @@ class AssistantProfileView extends StatelessWidget {
                 ),
               ],
             ),
-
             const Divider(height: 40),
-
             _buildSectionTitle("Bio"),
             Text(
               profile['bio'] ?? "No bio available.",
               style: const TextStyle(fontSize: 15, height: 1.5),
             ),
-
             const SizedBox(height: 20),
-
             _buildSectionTitle("Experience Details"),
             Text(
               profile['experienceDescription'] ?? "No details provided.",
               style: const TextStyle(fontSize: 15, height: 1.5),
             ),
-
             const SizedBox(height: 20),
-
             _buildSectionTitle("Skills"),
             Wrap(
               spacing: 8,
@@ -108,11 +188,8 @@ class AssistantProfileView extends StatelessWidget {
                   )
                   .toList(),
             ),
-
             const SizedBox(height: 20),
-
             _buildSectionTitle("Weekly Availability"),
-            const SizedBox(height: 10),
             ...workingTimes.entries.map((entry) {
               final times = entry.value as List<dynamic>;
               return Padding(
@@ -132,29 +209,32 @@ class AssistantProfileView extends StatelessWidget {
                 ),
               );
             }),
-
             const SizedBox(height: 30),
 
-            // Call to Action
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Handle Hiring/Booking Step
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // Button is ONLY visible if accessed from JobExpanded (jobId != null)
+            if (widget.jobId != null)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _handleBookingRequest,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ),
-                child: const Text(
-                  "Request Booking",
-                  style: TextStyle(fontSize: 16),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          "Request Booking",
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
-            ),
             const SizedBox(height: 20),
           ],
         ),

@@ -29,6 +29,7 @@ class _JobExpandedState extends State<JobExpanded> {
       // Show the reusable profile widget in a bottom sheet
       final String rawJson = jsonEncode(result.data);
       final Map<String, dynamic> profileData = jsonDecode(rawJson);
+      profileData['assistantId'] = assistantId;
 
       _showProfileModal(profileData);
     } on FirebaseFunctionsException catch (e) {
@@ -54,7 +55,11 @@ class _JobExpandedState extends State<JobExpanded> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AssistantProfileView(profile: profileData),
+      builder: (context) => AssistantProfileView(
+        profile: profileData,
+        jobId: widget.job.id, // Pass the current job ID
+        seekerId: widget.job.seekerId, // Pass the required seekerId
+      ),
     );
   }
 
