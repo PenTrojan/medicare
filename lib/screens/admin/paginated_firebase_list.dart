@@ -134,7 +134,7 @@ class _PaginatedFirebaseListState extends State<PaginatedFirebaseList> {
         child: ListTile(
           leading: CircleAvatar(
             backgroundImage: hasProfilePic
-                ? NetworkImage(profilePicUrl)
+                ? NetworkImage(profilePicUrl!)
                 : null,
             child: hasProfilePic
                 ? null
@@ -166,7 +166,7 @@ class _PaginatedFirebaseListState extends State<PaginatedFirebaseList> {
       child: ListTile(
         leading: CircleAvatar(
           backgroundImage: hasProfileImage
-              ? NetworkImage(profileImageUrl)
+              ? NetworkImage(profileImageUrl!)
               : null,
           child: hasProfileImage
               ? null
