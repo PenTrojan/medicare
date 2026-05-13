@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/job.dart';
 import '../../widgets/assistant_profile_view.dart';
+import 'dart:convert';
 
 class JobExpanded extends StatefulWidget {
   final Job job;
@@ -26,7 +27,10 @@ class _JobExpandedState extends State<JobExpanded> {
       if (!mounted) return;
 
       // Show the reusable profile widget in a bottom sheet
-      _showProfileModal(Map<String, dynamic>.from(result.data));
+      final String rawJson = jsonEncode(result.data);
+      final Map<String, dynamic> profileData = jsonDecode(rawJson);
+
+      _showProfileModal(profileData);
     } on FirebaseFunctionsException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

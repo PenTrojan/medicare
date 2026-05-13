@@ -21,7 +21,11 @@ export const getAssistantPublicProfile = onCall(async (request) => {
       throw new HttpsError("not-found", "Assistant not found.");
     }
 
-    const data = assistantDoc.data()!;
+    const data = assistantDoc.data();
+
+    if (!data) {
+      throw new HttpsError("not-found", "Assistant data is empty.");
+    }
 
     // 2. Return the Full Public Profile (Masked for Seeker)
     return {

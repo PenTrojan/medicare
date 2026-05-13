@@ -153,8 +153,6 @@ class _AddJobPageState extends State<AddJobPage> {
 
       if (!mounted) return;
 
-      setState(() => _isLoading = false);
-
       Navigator.pop(context);
     } catch (e) {
       if (mounted) {
