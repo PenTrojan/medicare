@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/job.dart';
-import 'job_expanded.dart'; // Import the details page
+import '../shared/job_details_view.dart';
 import '../../services/dummy_data_service.dart';
 
 class SeekerJobDetailsPage extends StatelessWidget {
@@ -97,7 +97,7 @@ class SeekerJobDetailsPage extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => JobExpanded(job: job),
+                      builder: (context) => SeekerJobPage(job: job),
                     ),
                   ),
                 ),
