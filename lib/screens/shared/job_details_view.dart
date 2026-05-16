@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/job.dart';
-import '../../widgets/assistant_profile_view.dart';
+import '../../widgets/assistant_booking_sheet.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart'; // Add intl to your pubspec.yaml for date formatting
 
@@ -36,11 +36,8 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
-        builder: (context) => AssistantProfileView(
-          profile: profileData,
-          jobId: widget.job.id,
-          seekerId: widget.job.seekerId,
-        ),
+        builder: (context) =>
+            AssistantBookingSheet(profile: profileData, jobId: widget.job.id),
       );
     } catch (e) {
       if (mounted) {

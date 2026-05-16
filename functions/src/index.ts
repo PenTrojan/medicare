@@ -8,3 +8,4 @@ export {matchJobToAssistants} from "./handlers/jobs";
 export {getAssistantPublicProfile} from "./handlers/profiles";
 
 export {requestAssistantBooking} from "./handlers/bookings";
+export {cancelAssistantBooking} from "./handlers/bookings";

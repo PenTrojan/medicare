@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AssistantProfileView extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -20,6 +21,67 @@ class AssistantProfileView extends StatefulWidget {
 
 class _AssistantProfileViewState extends State<AssistantProfileView> {
   bool _isSubmitting = false;
+  bool _alreadySent = false;
+  bool _isInitialLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkExistingRequest();
+  }
+
+  Future<void> _checkExistingRequest() async {
+    if (widget.jobId == null) {
+      setState(() => _isInitialLoading = false);
+      return;
+    }
+
+    try {
+      final inviteId = "${widget.jobId}_${widget.profile['assistantId']}";
+      final doc = await FirebaseFirestore.instance
+          .collection('invitations')
+          .doc(inviteId)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          // It's considered "sent" if it exists and isn't declined
+          _alreadySent = doc.exists && doc.data()?['status'] != 'declined';
+          _isInitialLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isInitialLoading = false);
+    }
+  }
+
+  Future<void> _handleCancelRequest() async {
+    setState(() => _isSubmitting = true);
+
+    try {
+      final inviteId = "${widget.jobId}_${widget.profile['assistantId']}";
+
+      // We update the status to 'cancelled'
+      await FirebaseFirestore.instance
+          .collection('invitations')
+          .doc(inviteId)
+          .update({'status': 'cancelled'});
+
+      if (mounted) {
+        Navigator.pop(context); // 👈 Close the modal on success
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Request cancelled.")));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to cancel request.")),
+        );
+      }
+    }
+  }
 
   /// Backend-driven booking logic
   Future<void> _handleBookingRequest() async {
@@ -52,19 +114,24 @@ class _AssistantProfileViewState extends State<AssistantProfileView> {
         );
       }
     } on FirebaseFunctionsException catch (e) {
+      String message = "Server Error: ${e.message}";
+      if (e.code == 'already-exists') {
+        message = "A request has already been sent to this assistant.";
+        setState(() => _alreadySent = true);
+      }
       if (mounted) {
+        setState(() => _isSubmitting = false); // 👈 Ensure loader stops
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("Server Error: ${e.message}")));
+        ).showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("An unexpected error occurred.")),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -216,24 +283,40 @@ class _AssistantProfileViewState extends State<AssistantProfileView> {
               SizedBox(
                 width: double.infinity,
                 height: 50,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _handleBookingRequest,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text(
-                          "Request Booking",
-                          style: TextStyle(fontSize: 16),
+                child: _isInitialLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _alreadySent
+                    ? OutlinedButton.icon(
+                        onPressed: _isSubmitting ? null : _handleCancelRequest,
+                        icon: const Icon(Icons.close, color: Colors.red),
+                        label: const Text(
+                          "Cancel Request",
+                          style: TextStyle(color: Colors.red),
                         ),
-                ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      )
+                    : ElevatedButton(
+                        onPressed: _isSubmitting ? null : _handleBookingRequest,
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text("Request Booking"),
+                      ),
               ),
             const SizedBox(height: 20),
           ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../widgets/assistant_profile_view.dart';
+import '../../widgets/assistant_profile_ui.dart';
 
 class SeekerDash extends StatefulWidget {
   const SeekerDash({super.key});
@@ -25,8 +25,7 @@ class _SeekerDashState extends State<SeekerDash> {
   // =========================
   // SEARCH
   // =========================
-  final TextEditingController _searchController =
-      TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   String _searchText = '';
 
@@ -71,11 +70,9 @@ class _SeekerDashState extends State<SeekerDash> {
         _documents.addAll(snapshot.docs);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error loading assistants: $e"),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error loading assistants: $e")));
     }
 
     if (mounted) {
@@ -111,8 +108,7 @@ class _SeekerDashState extends State<SeekerDash> {
       final results = snapshot.docs.where((doc) {
         final data = doc.data() as Map<String, dynamic>;
 
-        final name =
-            (data['name'] ?? '').toString().toLowerCase();
+        final name = (data['name'] ?? '').toString().toLowerCase();
 
         return name.contains(value.toLowerCase());
       }).toList();
@@ -121,11 +117,9 @@ class _SeekerDashState extends State<SeekerDash> {
         _searchResults = results;
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Search error: $e"),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Search error: $e")));
     }
   }
 
@@ -142,8 +136,9 @@ class _SeekerDashState extends State<SeekerDash> {
     // =========================
     final bool isSearching = _searchText.isNotEmpty;
 
-    final List<DocumentSnapshot> displayList =
-        isSearching ? _searchResults : _documents;
+    final List<DocumentSnapshot> displayList = isSearching
+        ? _searchResults
+        : _documents;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -210,66 +205,61 @@ class _SeekerDashState extends State<SeekerDash> {
             // =========================
             Expanded(
               child: displayList.isEmpty && _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
+                  ? const Center(child: CircularProgressIndicator())
                   : displayList.isEmpty
-                      ? const Center(
-                          child: Text('No assistants found'),
-                        )
-                      : ListView.builder(
-                          itemCount:
-                              displayList.length +
-                                  (!isSearching && _hasMore
-                                      ? 1
-                                      : 0),
+                  ? const Center(child: Text('No assistants found'))
+                  : ListView.builder(
+                      itemCount:
+                          displayList.length +
+                          (!isSearching && _hasMore ? 1 : 0),
 
-                          itemBuilder: (context, index) {
-                            // =========================
-                            // SEE MORE BUTTON
-                            // =========================
-                            if (!isSearching &&
-                                index == displayList.length) {
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(
-                                        vertical: 20),
+                      itemBuilder: (context, index) {
+                        // =========================
+                        // SEE MORE BUTTON
+                        // =========================
+                        if (!isSearching && index == displayList.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
 
-                                child: Center(
-                                  child: _isLoading
-                                      ? const CircularProgressIndicator()
-                                      : ElevatedButton(
-                                          onPressed:
-                                              _loadAssistants,
+                            child: Center(
+                              child: _isLoading
+                                  ? const CircularProgressIndicator()
+                                  : ElevatedButton(
+                                      onPressed: _loadAssistants,
 
-                                          child:
-                                              const Text("See More"),
-                                        ),
+                                      child: const Text("See More"),
+                                    ),
+                            ),
+                          );
+                        }
+
+                        final data =
+                            displayList[index].data() as Map<String, dynamic>;
+                        data['assistantId'] = displayList[index].id;
+                        return GestureDetector(
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.white,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(25),
                                 ),
-                              );
-                            }
-
-                            final data =
-                                displayList[index].data()
-                                    as Map<String, dynamic>;
-                            data['assistantId'] = displayList[index].id;
-                            return GestureDetector(
-                              onTap: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (_) => AssistantProfileView(
-                                    profile: data,
-                                    seekerId: '',
-                                  ),
-                                );
-                              },
-
-                              child: _buildAssistantCard(data),
+                              ),
+                              builder: (_) => Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: SingleChildScrollView(
+                                  child: AssistantProfileUI(profile: data),
+                                ),
+                              ),
                             );
                           },
-                        ),
+
+                          child: _buildAssistantCard(data),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -286,9 +276,7 @@ class _SeekerDashState extends State<SeekerDash> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
 
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
 
       child: ListTile(
         leading: CircleAvatar(
@@ -296,16 +284,14 @@ class _SeekerDashState extends State<SeekerDash> {
           backgroundColor: Colors.grey[200],
 
           child: ClipOval(
-            child: (imageUrl != null &&
-                    imageUrl.toString().isNotEmpty)
+            child: (imageUrl != null && imageUrl.toString().isNotEmpty)
                 ? Image.network(
                     imageUrl,
                     width: 56,
                     height: 56,
                     fit: BoxFit.cover,
 
-                    errorBuilder:
-                        (context, error, stackTrace) {
+                    errorBuilder: (context, error, stackTrace) {
                       return const Icon(Icons.person);
                     },
                   )
@@ -316,20 +302,14 @@ class _SeekerDashState extends State<SeekerDash> {
         title: Text(
           data['name'] ?? 'No Name',
 
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
 
-        subtitle: Text(
-          data['experience'] ?? 'No experience info',
-        ),
+        subtitle: Text(data['experience'] ?? 'No experience info'),
 
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          size: 16,
-        ),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       ),
     );
   }
 }
+
