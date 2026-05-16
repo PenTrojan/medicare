@@ -6,7 +6,7 @@ import 'firestore_object.dart';
 // matching - matched list created
 // assigned - an assistant is assigned
 // completed - job finished
-enum JobStatus { pending, matching, assigned, completed }
+enum JobStatus { pending, matching, assigned, completed, no_matches }
 
 class Job implements FirestoreObject {
   @override

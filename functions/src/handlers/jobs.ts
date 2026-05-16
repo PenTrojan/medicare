@@ -143,16 +143,22 @@ export const matchJobToAssistants = onDocumentCreated(
           assistantSkills.includes(skill),
         );
 
+        // Match percentage based on required skills
+        const matchPercentage = requiredSkills.length > 0 ?
+          (matchingSkills.length / requiredSkills.length) * 100 :
+          100;
+
         const dist = distanceMap.get(assistantId) || 0;
 
-        // Logic: Include if they have skills OR are within 15km
-        if (matchingSkills.length > 0 || dist < 15) {
+        // Logic: Include if they match at least 50% of skills
+        // OR are within 15km
+        if (matchPercentage >= 50 || dist < 15) {
           return {
             assistantId: doc.id,
             name: assistant.name || "Assistant",
             distance: Number(dist.toFixed(2)),
-            matchScore: matchingSkills.length,
-            profilePic: assistant.profilePic || null,
+            matchScore: Number(matchPercentage.toFixed(1)),
+            profilePic: assistant.profilePicUrl || null,
             dailyRate: assistant.dailyRate || 0,
             experienceLevel: assistant.experienceLevel || "unspecified",
           };

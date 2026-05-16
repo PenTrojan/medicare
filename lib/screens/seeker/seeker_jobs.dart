@@ -92,7 +92,11 @@ class SeekerJobsPage extends StatelessWidget {
           children: [
             AddJobPage(),
             SeekerJobDetailsPage(
-              filterStatuses: [JobStatus.pending, JobStatus.matching],
+              filterStatuses: [
+                JobStatus.pending,
+                JobStatus.matching,
+                JobStatus.no_matches,
+              ],
             ),
             SeekerJobDetailsPage(filterStatuses: [JobStatus.assigned]),
           ],
@@ -133,4 +137,3 @@ class SeekerJobsPage extends StatelessWidget {
     );
   }
 }
-
