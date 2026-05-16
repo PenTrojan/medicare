@@ -1,7 +1,11 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import {AssistantMatch} from "../models/interfaces";
-import {getDistance, isTimeCompatible} from "../utils/matching-helpers";
+import {
+  getDistance,
+  isTimeCompatible,
+  doHoursOverlap,
+} from "../utils/matching-helpers";
 
 const db = admin.firestore();
 
@@ -116,14 +120,23 @@ export const matchJobToAssistants = onDocumentCreated(
           .where("endDate", ">=", jobData.startDate)
           .get();
 
-        // Logical overlap check
-        const isBusy = conflictSnap.docs.some((bDoc) => {
+        // ii. Refined Hour-Level Conflict Check
+        const hasActualConflict = conflictSnap.docs.some((bDoc) => {
           const bData = bDoc.data();
-          return bData.startDate <= jobData.endDate;
+
+          // First, check the logical date overlap (Overlap Theorem)
+          const datesOverlap = bData.startDate <= jobData.endDate;
+
+          if (datesOverlap) {
+            // If dates overlap, dive into the hours
+            // If doHoursOverlap returns true, it's a real conflict
+            return doHoursOverlap(jobData.workingTimes, bData.workingTimes);
+          }
+
+          return false;
         });
 
-        if (isBusy) return null;
-
+        if (hasActualConflict) return null;
         // Skill Matching score
         const assistantSkills: string[] = assistant.skills || [];
         const matchingSkills = requiredSkills.filter((skill) =>

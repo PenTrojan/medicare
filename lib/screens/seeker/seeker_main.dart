@@ -6,8 +6,7 @@ import 'package:flutter/material.dart';
 
 // Seeker-specific pages
 import 'seeker_dashboard.dart';
-import 'add_job_page.dart';
-import 'job_details_page.dart';
+import 'seeker_jobs.dart';
 
 // shared pages
 import '../shared/messaging_page.dart';
@@ -26,8 +25,7 @@ class _SeekerMainState extends State<SeekerMain> {
   // Available Pages
   final List<Widget> _pages = [
     const SeekerDash(),
-    const AddJobPage(),
-    const SeekerJobDetailsPage(),
+    const SeekerJobsPage(),
     const MessagingPage(),
     const ProfilePage(),
   ];
@@ -35,25 +33,22 @@ class _SeekerMainState extends State<SeekerMain> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /** instead of if else using indexed stack keeps the other pages
-	* in the background and preserves their state*/
+      /** * IndexedStack ensures that if a user is halfway through filling the 
+       * 'Create Job' form in SeekerJobsPage and switches to 'Chat', 
+       * their form data isn't lost when they switch back.
+       */
       body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType
-            .fixed, // Ensure icons and labels stays visible
+        type: BottomNavigationBarType.fixed,
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Find'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            label: 'Add Job',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Status',
+            icon: Icon(Icons.assignment_outlined),
+            label: 'My Jobs',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),

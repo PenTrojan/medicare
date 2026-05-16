@@ -4,6 +4,7 @@ import '../../models/job.dart';
 import '../../widgets/assistant_booking_sheet.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart'; // Add intl to your pubspec.yaml for date formatting
+import 'package:firebase_auth/firebase_auth.dart';
 
 // =============================================================================
 // 1. SEEKER VIEW (Specs + Match List)
@@ -158,6 +159,44 @@ class AssistantJobPage extends StatelessWidget {
     );
   }
 
+  Future<void> _handleInvitationResponse(
+    BuildContext context,
+    String action,
+  ) async {
+    // Show loading overlay
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final assistantId = FirebaseAuth.instance.currentUser!.uid;
+
+      // Call the Cloud Function in invitation_lifecycle.ts
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            action == 'accept' ? 'acceptInvitation' : 'declineInvitation',
+          )
+          .call({'jobId': job.id, 'assistantId': assistantId});
+
+      if (context.mounted) {
+        Navigator.pop(context); // Remove loading indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Job ${action}ed successfully!")),
+        );
+        Navigator.pop(context); // Return to previous list page
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Remove loading indicator
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: ${e.message}")));
+      }
+    }
+  }
+
   Widget _buildInvitationActions(BuildContext context) {
     return SafeArea(
       child: Padding(
@@ -166,7 +205,7 @@ class AssistantJobPage extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => _handleInvitationResponse(context, 'decline'),
                 style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
                 child: const Text("Decline"),
               ),
@@ -174,9 +213,7 @@ class AssistantJobPage extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: ElevatedButton(
-                onPressed: () {
-                  // Acceptance logic here
-                },
+                onPressed: () => _handleInvitationResponse(context, 'accept'),
                 child: const Text("Accept Job"),
               ),
             ),

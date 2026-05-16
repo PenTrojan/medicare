@@ -59,3 +59,39 @@ export function isTimeCompatible(
   }
   return true;
 }
+
+/**
+ * Checks if two working time maps have any hour-level overlaps.
+ * @param {Record<string, string[]>} jobTimes - Map of days to [start, end]
+ * time strings for the new job.
+ * @param {Record<string, string[]>} bookingTimes - Map of days to [start, end]
+ * time strings for existing bookings.
+ * @return {boolean} True if there is a conflict in hours, false otherwise.
+ */
+export function doHoursOverlap(
+  jobTimes: Record<string, string[]>,
+  bookingTimes: Record<string, string[]>,
+): boolean {
+  for (const day in jobTimes) {
+    if (
+      Object.prototype.hasOwnProperty.call(jobTimes, day) &&
+      bookingTimes[day]
+    ) {
+      const [jobStart, jobEnd] = jobTimes[day];
+      const [bookStart, bookEnd] = bookingTimes[day];
+
+      // Convert to comparable numbers using double quotes for ESLint
+      const jS = parseInt(jobStart.replace(":", ""), 10);
+      const jE = parseInt(jobEnd.replace(":", ""), 10);
+      const bS = parseInt(bookStart.replace(":", ""), 10);
+      const bE = parseInt(bookEnd.replace(":", ""), 10);
+
+      // Conflict logic: Job starts before booking ends
+      // AND ends after booking starts
+      if (jS < bE && jE > bS) {
+        return true;
+      }
+    }
+  }
+  return false;
+}

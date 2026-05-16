@@ -3,9 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../models/job.dart';
-import '../../models/app_user.dart'; // For Gender enum
+import '../../models/app_user.dart';
 import '../../widgets/skill_selector.dart';
-import '../../widgets/availability_selector.dart'; // Our shared widget
+import '../../widgets/availability_selector.dart';
 
 class AddJobPage extends StatefulWidget {
   const AddJobPage({super.key});
@@ -31,7 +31,6 @@ class _AddJobPageState extends State<AddJobPage> {
   bool _isLoading = false;
   final List<String> _selectedSkills = [];
 
-  // Availability State (to be passed to AvailabilitySelector)
   late Map<String, bool> _dayEnabled;
   late Map<String, TimeOfDay?> _dayStart;
   late Map<String, TimeOfDay?> _dayEnd;
@@ -69,7 +68,6 @@ class _AddJobPageState extends State<AddJobPage> {
     });
   }
 
-  // Same logic as AssistantReg to ensure matching string formats
   Map<String, List<String>> _generateWorkingTimesMap() {
     Map<String, List<String>> map = {};
     _dayEnabled.forEach((day, enabled) {
@@ -104,14 +102,12 @@ class _AddJobPageState extends State<AddJobPage> {
 
   Future<void> _submitJob() async {
     if (!_formKey.currentState!.validate()) return;
-
     if (_jobLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please set the job location")),
       );
       return;
     }
-
     if (_selectedDateRange == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a date range")),
@@ -153,108 +149,112 @@ class _AddJobPageState extends State<AddJobPage> {
 
       if (!mounted) return;
 
-      Navigator.pop(context);
+      // Success snackbar since we are staying on the dashboard
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Job posted! Check the Pending tab for matches."),
+        ),
+      );
+
+      // Navigate user to the "Pending" tab automatically
+      DefaultTabController.of(context).animateTo(1);
+
+      _formKey.currentState!.reset();
+      setState(() {
+        _selectedDateRange = null;
+        _jobLocation = null;
+        _selectedSkills.clear();
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Failed to save: $e")));
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to save: $e")));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Create New Job")),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  const Text(
-                    "Patient Details",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 15),
-                  _buildTextField(
-                    _nameController,
-                    "Patient Name",
-                    Icons.person,
-                  ),
-                  _buildTextField(
-                    _ageController,
-                    "Age",
-                    Icons.cake,
-                    isNumber: true,
-                  ),
-                  _buildTextField(
-                    _addressController,
-                    "Full Address",
-                    Icons.home,
-                  ),
-                  _buildTextField(
-                    _conditionController,
-                    "Medical Condition",
-                    Icons.medical_services,
-                    maxLines: 2,
-                  ),
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                _buildSectionHeader("Patient Details"),
+                _buildTextField(_nameController, "Patient Name", Icons.person),
+                _buildTextField(
+                  _ageController,
+                  "Age",
+                  Icons.cake,
+                  isNumber: true,
+                ),
+                _buildTextField(_addressController, "Full Address", Icons.home),
+                _buildTextField(
+                  _conditionController,
+                  "Medical Condition",
+                  Icons.healing,
+                  maxLines: 2,
+                ),
 
-                  const Divider(height: 40),
-                  const Text(
-                    "Matching Preferences",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 15),
+                const Divider(height: 40),
+                _buildSectionHeader("Matching Preferences"),
 
-                  DropdownButtonFormField<Gender>(
-                    value: _preferredGender,
-                    decoration: const InputDecoration(
-                      labelText: "Preferred Gender",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.wc),
+                DropdownButtonFormField<Gender>(
+                  value: _preferredGender,
+                  decoration: const InputDecoration(
+                    labelText: "Preferred Assistant Gender",
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.wc, color: Color(0xFF3B82F6)),
+                  ),
+                  items: Gender.values
+                      .map(
+                        (g) => DropdownMenuItem(
+                          value: g,
+                          child: Text(g.name.toUpperCase()),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (val) => setState(() => _preferredGender = val!),
+                ),
+                const SizedBox(height: 15),
+                _buildTextField(
+                  _maxRateController,
+                  "Max Daily Budget (Rs)",
+                  Icons.payments,
+                  isNumber: true,
+                ),
+                const SizedBox(height: 10),
+                SkillSelector(
+                  selectedSkills: _selectedSkills,
+                  onSkillToggled: _handleSkillToggled,
+                ),
+
+                const Divider(height: 40),
+                _buildSectionHeader("Schedule"),
+
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  child: ListTile(
+                    title: const Text(
+                      "Select Date Range",
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    items: Gender.values
-                        .map(
-                          (g) => DropdownMenuItem(
-                            value: g,
-                            child: Text(g.name.toUpperCase()),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (val) => setState(() => _preferredGender = val!),
-                  ),
-                  const SizedBox(height: 15),
-                  _buildTextField(
-                    _maxRateController,
-                    "Max Daily Budget (Rs)",
-                    Icons.payments,
-                    isNumber: true,
-                  ),
-
-                  const SizedBox(height: 10),
-                  SkillSelector(
-                    selectedSkills: _selectedSkills,
-                    onSkillToggled: _handleSkillToggled,
-                  ),
-
-                  const Divider(height: 40),
-                  const Text(
-                    "Schedule",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-
-                  ListTile(
-                    title: const Text("Select Date Range"),
                     subtitle: Text(
                       _selectedDateRange == null
                           ? "Not Set"
                           : "${_selectedDateRange!.start.toString().split(' ')[0]} to ${_selectedDateRange!.end.toString().split(' ')[0]}",
                     ),
-                    trailing: const Icon(Icons.calendar_today),
+                    trailing: const Icon(
+                      Icons.calendar_today,
+                      color: Color(0xFF3B82F6),
+                    ),
                     onTap: () async {
                       final picked = await showDateRangePicker(
                         context: context,
@@ -265,44 +265,72 @@ class _AddJobPageState extends State<AddJobPage> {
                         setState(() => _selectedDateRange = picked);
                     },
                   ),
-
-                  AvailabilitySelector(
-                    dayEnabled: _dayEnabled,
-                    dayStart: _dayStart,
-                    dayEnd: _dayEnd,
-                    onChanged: (day, enabled, start, end) {
-                      setState(() {
-                        _dayEnabled[day] = enabled;
-                        _dayStart[day] = start;
-                        _dayEnd[day] = end;
-                      });
-                    },
+                ),
+                const SizedBox(height: 10),
+                AvailabilitySelector(
+                  dayEnabled: _dayEnabled,
+                  dayStart: _dayStart,
+                  dayEnd: _dayEnd,
+                  onChanged: (day, enabled, start, end) {
+                    setState(() {
+                      _dayEnabled[day] = enabled;
+                      _dayStart[day] = start;
+                      _dayEnd[day] = end;
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  tileColor: _jobLocation == null
+                      ? Colors.red[50]
+                      : Colors.green[50],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  title: const Text(
+                    "Set Precise Job Location",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  trailing: Icon(
+                    Icons.my_location,
+                    color: _jobLocation == null ? Colors.red : Colors.green,
+                  ),
+                  onTap: _getLocation,
+                ),
 
-                  const SizedBox(height: 20),
-                  ListTile(
-                    tileColor: _jobLocation == null
-                        ? Colors.red[50]
-                        : Colors.green[50],
-                    title: const Text("Set Precise Job Location"),
-                    trailing: Icon(
-                      Icons.my_location,
-                      color: _jobLocation == null ? Colors.red : Colors.green,
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _submitJob,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E3A8A),
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    onTap: _getLocation,
                   ),
-
-                  const SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: _submitJob,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
-                    child: const Text("Post Job & Start Matching"),
+                  child: const Text(
+                    "Post Job & Start Matching",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
+          );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF1E3A8A),
+        ),
+      ),
     );
   }
 
@@ -321,7 +349,7 @@ class _AddJobPageState extends State<AddJobPage> {
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon),
+          prefixIcon: Icon(icon, color: const Color(0xFF3B82F6)),
           border: const OutlineInputBorder(),
         ),
         validator: (v) => v!.isEmpty ? "Required" : null,
@@ -329,3 +357,4 @@ class _AddJobPageState extends State<AddJobPage> {
     );
   }
 }
+

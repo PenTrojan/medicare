@@ -1,11 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/job.dart';
 import '../shared/job_details_view.dart';
 
 class InvitationsPage extends StatelessWidget {
   const InvitationsPage({super.key});
+
+  // Call the Cloud Function instead of manual Firestore updates
+  Future<void> _respondToInvite(
+    BuildContext context,
+    String jobId,
+    String action,
+  ) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    final assistantId = FirebaseAuth.instance.currentUser!.uid;
+
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable(
+            action == 'accept' ? 'acceptInvitation' : 'declineInvitation',
+          )
+          .call({'jobId': jobId, 'assistantId': assistantId});
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Invitation ${action}ed.")));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to $action: $e")));
+      }
+    }
+  }
 
   ///Logic to fetch Job data and Navigate
   Future<void> _viewJobDetails(BuildContext context, String jobId) async {
@@ -44,47 +79,6 @@ class InvitationsPage extends StatelessWidget {
     }
   }
 
-  Future<void> _acceptJob(
-    BuildContext context,
-    String invitationId,
-    String jobId,
-  ) async {
-    final assistantId = FirebaseAuth.instance.currentUser!.uid;
-    final batch = FirebaseFirestore.instance.batch();
-
-    batch.update(
-      FirebaseFirestore.instance.collection('invitations').doc(invitationId),
-      {'status': 'accepted'},
-    );
-
-    batch.update(FirebaseFirestore.instance.collection('jobs').doc(jobId), {
-      'assignedAssistantId': assistantId,
-      'status': 'in_progress',
-    });
-
-    try {
-      await batch.commit();
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Job accepted!")));
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Error: $e")));
-      }
-    }
-  }
-
-  Future<void> _declineJob(String invitationId) async {
-    await FirebaseFirestore.instance
-        .collection('invitations')
-        .doc(invitationId)
-        .update({'status': 'declined'});
-  }
-
   @override
   Widget build(BuildContext context) {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
@@ -115,7 +109,6 @@ class InvitationsPage extends StatelessWidget {
               final invite = invitations[index];
               final data = invite.data() as Map<String, dynamic>;
               final String jobId = data['jobId'];
-              final String inviteId = invite.id;
 
               return Card(
                 elevation: 3,
@@ -138,7 +131,6 @@ class InvitationsPage extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // VIEW DETAILS BUTTON
                           TextButton.icon(
                             onPressed: () => _viewJobDetails(context, jobId),
                             icon: const Icon(Icons.visibility_outlined),
@@ -147,7 +139,8 @@ class InvitationsPage extends StatelessWidget {
                           Row(
                             children: [
                               TextButton(
-                                onPressed: () => _declineJob(inviteId),
+                                onPressed: () =>
+                                    _respondToInvite(context, jobId, 'decline'),
                                 child: const Text(
                                   "Decline",
                                   style: TextStyle(color: Colors.red),
@@ -156,7 +149,7 @@ class InvitationsPage extends StatelessWidget {
                               const SizedBox(width: 8),
                               ElevatedButton(
                                 onPressed: () =>
-                                    _acceptJob(context, inviteId, jobId),
+                                    _respondToInvite(context, jobId, 'accept'),
                                 child: const Text("Accept"),
                               ),
                             ],
@@ -174,4 +167,3 @@ class InvitationsPage extends StatelessWidget {
     );
   }
 }
-
