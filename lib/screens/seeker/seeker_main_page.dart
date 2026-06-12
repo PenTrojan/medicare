@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 
 // Seeker-specific pages
 import 'seeker_dashboard.dart';
-import 'seeker_jobs.dart';
+import 'seeker_jobs_page.dart';
 
 // shared pages
 import '../shared/messaging_page.dart';

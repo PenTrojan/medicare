@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/job.dart';
-import '../shared/job_details_view.dart';
+import '../shared/job_details_page.dart';
 
 class InvitationsPage extends StatelessWidget {
   const InvitationsPage({super.key});
@@ -83,9 +83,9 @@ class InvitationsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Job Invitations")),
-      body: StreamBuilder<QuerySnapshot>(
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('invitations')
             .where('assistantId', isEqualTo: currentUid)

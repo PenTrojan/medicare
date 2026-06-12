@@ -1,60 +1,33 @@
+// ==================================================
+//       Reusable widget to display jobs as a list.
+// ==================================================
+
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../models/job.dart';
-import '../shared/job_details_view.dart'; // The page that shows matches/details
+import '../models/job.dart';
 
-class SeekerJobDetailsPage extends StatelessWidget {
-  final List<JobStatus> filterStatuses;
+class JobListView extends StatelessWidget {
+  final List<Job> jobs;
+  final Function(Job) onJobTap;
 
-  const SeekerJobDetailsPage({super.key, required this.filterStatuses});
+  const JobListView({super.key, required this.jobs, required this.onJobTap});
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    if (jobs.isEmpty) {
+      return _buildEmptyState();
+    }
 
-    // Safety check (though the dashboard handles this, it's good practice)
-    if (user == null) return const SizedBox.shrink();
-
-    return StreamBuilder<QuerySnapshot>(
-      // We filter by seekerId and the specific statuses passed to this widget
-      stream: FirebaseFirestore.instance
-          .collection('jobs')
-          .where('seekerId', isEqualTo: user.uid)
-          .where('status', whereIn: filterStatuses.map((e) => e.name).toList())
-          .orderBy('createdAt', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text("Error: ${snapshot.error}"));
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final jobs = snapshot.data!.docs
-            .map((doc) => Job.fromFirestore(doc))
-            .toList();
-
-        if (jobs.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          itemCount: jobs.length,
-          itemBuilder: (context, index) {
-            final job = jobs[index];
-            return _buildJobCard(context, job);
-          },
-        );
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      itemCount: jobs.length,
+      itemBuilder: (context, index) {
+        final job = jobs[index];
+        return _buildJobCard(context, job);
       },
     );
   }
 
   Widget _buildJobCard(BuildContext context, Job job) {
-    // Determine color based on status
     Color statusColor;
     switch (job.status) {
       case JobStatus.pending:
@@ -119,12 +92,7 @@ class SeekerJobDetailsPage extends StatelessWidget {
           size: 16,
           color: Colors.grey,
         ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => SeekerJobPage(job: job)),
-          );
-        },
+        onTap: () => onJobTap(job),
       ),
     );
   }

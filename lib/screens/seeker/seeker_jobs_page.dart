@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'add_job_page.dart';
-import 'job_details_page.dart';
+import 'seeker_job_list_stream_view.dart';
 import '../../models/job.dart';
 
 class SeekerJobsPage extends StatelessWidget {
