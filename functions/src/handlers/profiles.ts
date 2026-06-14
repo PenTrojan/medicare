@@ -1,5 +1,6 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {IAppUser} from "../core/Interfaces";
 
 const db = admin.firestore();
 
@@ -21,7 +22,7 @@ export const getAssistantPublicProfile = onCall(async (request) => {
       throw new HttpsError("not-found", "Assistant not found.");
     }
 
-    const data = assistantDoc.data();
+    const data = assistantDoc.data() as IAppUser;
 
     if (!data) {
       throw new HttpsError("not-found", "Assistant data is empty.");

@@ -8,6 +8,7 @@ import 'assistant_jobs_page.dart';
 // shared pages
 import '../shared/messaging_page.dart';
 import '../shared/profile_page.dart';
+import '../shared/payments_page.dart';
 
 class AssistantMain extends StatefulWidget {
   const AssistantMain({super.key});
@@ -22,6 +23,7 @@ class _AssistantMainState extends State<AssistantMain> {
   final List<Widget> _pages = [
     const AssistantDash(),
     const AssistantJobsPage(), // Tab 2: The jobs
+    const PaymentsPage(isSeeker: false),
     const MessagingPage(), // Tab 3: Communication
     const ProfilePage(), // Tab 4: Self-management
   ];
@@ -43,6 +45,10 @@ class _AssistantMainState extends State<AssistantMain> {
           BottomNavigationBarItem(
             icon: Icon(Icons.medical_services),
             label: 'Jobs',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.payments_outlined),
+            label: "Earnings",
           ),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
           BottomNavigationBarItem(

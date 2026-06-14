@@ -11,6 +11,7 @@ import 'seeker_jobs_page.dart';
 // shared pages
 import '../shared/messaging_page.dart';
 import '../shared/profile_page.dart';
+import '../shared/payments_page.dart';
 
 class SeekerMain extends StatefulWidget {
   const SeekerMain({super.key});
@@ -26,6 +27,7 @@ class _SeekerMainState extends State<SeekerMain> {
   final List<Widget> _pages = [
     const SeekerDash(),
     const SeekerJobsPage(),
+    const PaymentsPage(isSeeker: true),
     const MessagingPage(),
     const ProfilePage(),
   ];
@@ -48,7 +50,11 @@ class _SeekerMainState extends State<SeekerMain> {
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Find'),
           BottomNavigationBarItem(
             icon: Icon(Icons.assignment_outlined),
-            label: 'My Jobs',
+            label: 'Jobs',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.payments_outlined),
+            label: "Payments",
           ),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
