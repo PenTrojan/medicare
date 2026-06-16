@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../models/job.dart';
 import '../../models/app_user.dart';
 import '../../widgets/skill_selector.dart';
+import '../../widgets/location_picker_sheet.dart';
 import '../../widgets/availability_selector.dart';
 
 class AddJobPage extends StatefulWidget {
@@ -97,6 +98,23 @@ class _AddJobPageState extends State<AddJobPage> {
       ).showSnackBar(SnackBar(content: Text("Location Error: $e")));
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _openMapLocationPicker() async {
+    // Open our reusable modal layout viewport and wait for the user to confirm a position choice
+    final GeoPoint? pickedLocation = await showModalBottomSheet<GeoPoint>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LocationPickerSheet(initialLocation: _jobLocation),
+    );
+
+    // If they confirmed a choice, bind it directly into your form state manager instance
+    if (pickedLocation != null) {
+      setState(() {
+        _jobLocation = pickedLocation;
+      });
     }
   }
 
@@ -291,13 +309,18 @@ class _AddJobPageState extends State<AddJobPage> {
                     "Set Precise Job Location",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  subtitle: Text(
+                    _jobLocation == null
+                        ? "No position selected yet"
+                        : "Coordinates: ${_jobLocation!.latitude.toStringAsFixed(4)}, ${_jobLocation!.longitude.toStringAsFixed(4)}",
+                  ),
                   trailing: Icon(
-                    Icons.my_location,
+                    Icons
+                        .map_outlined, // Swapped to map icon indicator representation
                     color: _jobLocation == null ? Colors.red : Colors.green,
                   ),
-                  onTap: _getLocation,
+                  onTap: _openMapLocationPicker,
                 ),
-
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: _submitJob,
@@ -357,4 +380,3 @@ class _AddJobPageState extends State<AddJobPage> {
     );
   }
 }
-

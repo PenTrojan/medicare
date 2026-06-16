@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/job.dart';
 import '../../widgets/assistant_booking_sheet.dart';
+import 'billing_details_page.dart';
 import 'dart:convert';
-import 'package:intl/intl.dart'; // Add intl to your pubspec.yaml for date formatting
+import 'package:intl/intl.dart'; // Add intl to pubspec.yaml for date formatting
 import 'package:firebase_auth/firebase_auth.dart';
 
 // =============================================================================
@@ -53,6 +54,11 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
 
   @override
   Widget build(BuildContext context) {
+    // A seeker opening this page directly from their list dashboard should see billing
+    // ONLY if an assistant has actually been assigned to it.
+    final bool canShowBilling =
+        widget.job.status == JobStatus.assigned ||
+        widget.job.status == JobStatus.completed;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -66,7 +72,7 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                JobSpecsView(job: widget.job),
+                JobSpecsView(job: widget.job, showBilling: canShowBilling),
                 const SizedBox(height: 32),
                 const Text(
                   "Top Matched Assistants",
@@ -151,7 +157,8 @@ class AssistantJobPage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: JobSpecsView(job: job),
+        // If it's a pending invitation, hide billing (isPendingInvitation = true -> showBilling = false)
+        child: JobSpecsView(job: job, showBilling: !isPendingInvitation),
       ),
       bottomNavigationBar: isPendingInvitation
           ? _buildInvitationActions(context)
@@ -229,7 +236,12 @@ class AssistantJobPage extends StatelessWidget {
 // =============================================================================
 class JobSpecsView extends StatelessWidget {
   final Job job;
-  const JobSpecsView({super.key, required this.job});
+  final bool showBilling; // visibility flag.
+  const JobSpecsView({
+    super.key,
+    required this.job,
+    this.showBilling = false,
+  }); // default showbilling to false
 
   @override
   Widget build(BuildContext context) {
@@ -272,6 +284,57 @@ class JobSpecsView extends StatelessWidget {
             "Rs. ${job.maxDailyRate}/day",
           ),
         ]),
+
+        // =================== BILLING ===================================
+        if (showBilling) ...[
+          const SizedBox(height: 24),
+          _sectionHeader("Financial Account Ledger"),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade200),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(16),
+              leading: const CircleAvatar(
+                backgroundColor: Color(0xFFEFF6FF),
+                child: Icon(
+                  Icons.receipt_long_outlined,
+                  color: Color(0xFF3B82F6),
+                ),
+              ),
+              title: const Text(
+                "View Invoice & Escrow",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              subtitle: const Text(
+                "Track contract pricing, fees, and clearance status.",
+              ),
+              trailing: const Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: Colors.grey,
+              ),
+              onTap: () {
+                // Look up the widget tree context to see which parent page is housing this view
+                final isSeekerProfile =
+                    context.findAncestorWidgetOfExactType<SeekerJobPage>() !=
+                    null;
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BillingDetailsPage(
+                      jobId: job.id,
+                      isSeeker: isSeekerProfile,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ],
     );
   }

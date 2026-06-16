@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../widgets/location_picker_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:medicare/models/app_user.dart';
 import 'package:medicare/models/assistant.dart';
@@ -207,6 +208,24 @@ class _AssistantRegState extends State<AssistantReg> {
     }
   }
 
+  Future<void> _openMapLocationPicker() async {
+    // Open our reusable modal layout viewport and wait for the user to confirm a position choice
+    final GeoPoint? pickedLocation = await showModalBottomSheet<GeoPoint>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          LocationPickerSheet(initialLocation: _currentLocation),
+    );
+
+    // If they confirmed a choice, bind it directly into your form state manager instance
+    if (pickedLocation != null) {
+      setState(() {
+        _currentLocation = pickedLocation;
+      });
+    }
+  }
+
   Future<void> _saveProfile(Assistant assistant) async {
     if (!_formKey.currentState!.validate()) return;
     if (_nicImageUrl == null) {
@@ -396,18 +415,26 @@ class _AssistantRegState extends State<AssistantReg> {
                 const SizedBox(height: 15),
 
                 ListTile(
-                  title: const Text("Home Location"),
-                  subtitle: Text(
-                    _currentLocation == null ? "Not set" : "Location Captured",
-                  ),
-                  trailing: _isGettingLocation
-                      ? const CircularProgressIndicator()
-                      : const Icon(Icons.my_location, color: Colors.blue),
-                  onTap: _getCurrentLocation,
+                  tileColor: _currentLocation == null
+                      ? Colors.red[50]
+                      : Colors.green[50],
                   shape: RoundedRectangleBorder(
-                    side: const BorderSide(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  title: const Text(
+                    "Set Precise Home Location",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    _currentLocation == null
+                        ? "No position selected yet"
+                        : "Coordinates: ${_currentLocation!.latitude.toStringAsFixed(4)}, ${_currentLocation!.longitude.toStringAsFixed(4)}",
+                  ),
+                  trailing: Icon(
+                    Icons.map_outlined,
+                    color: _currentLocation == null ? Colors.red : Colors.green,
+                  ),
+                  onTap: _openMapLocationPicker,
                 ),
                 const SizedBox(height: 15),
 

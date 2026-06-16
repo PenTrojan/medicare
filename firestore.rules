@@ -1,3 +1,4 @@
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
@@ -8,7 +9,7 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Global Admin Access: The {document=**} wildcard matches every document in every collection
+    // Global Admin Access: The {document=**} wildcard matches every document
     match /{document=**} {
       allow read, write: if isAdmin();
     }
@@ -22,16 +23,15 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == userId
                     && (request.resource.data.role == 'seeker' || request.resource.data.role == 'assistant');
 
-      // Update Rule: Prevent users from changing their own role to 'admin' later
+      // Update Rule: Prevent users from changing their own role to 'admin'
       allow update: if request.auth != null && request.auth.uid == userId
-                    && request.resource.data.role == resource.data.role // Role cannot be changed
+                    && request.resource.data.role == resource.data.role 
                     && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']);
       
       // Seekers can read Assistant profiles
       allow read: if request.auth != null && 
                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seeker';
     }
-    
     
     // 2. Rules for the Metadata Collection
     match /metadata/{document} {
@@ -46,39 +46,47 @@ service cloud.firestore {
     match /jobs/{jobId} {
       allow read, write: if request.auth != null;
     }
+
     // 4. Rules for Chats
     match /chats/{chatId} {
-
       allow read, write: if request.auth != null;
 
       // Messages Subcollection
       match /messages/{messageId} {
-
         allow read, write: if request.auth != null;
       }
     }
+
     // 5. Rules for the Invitations Collection
     match /invitations/{inviteId} {
-      
-      // READ: Allow Seeker to fetch the document by Composite ID to check if it exists.
-      // This supports the 'Smart' Container's _checkExistingRequest() logic.
+      // READ: Allow Seeker to fetch the document by Composite ID
       allow get: if request.auth != null; 
       
-      // LIST: Restrict visibility so users only see invitations they are part of.
-      // Promotes "Loose Coupling" by ensuring the client only interacts with its own data.
+      // LIST: Restrict visibility so users only see their own invitations
       allow list: if request.auth != null && 
         (request.auth.uid == resource.data.seekerId || request.auth.uid == resource.data.assistantId);
       
       // UPDATE: Permissions are now role-specific.
       allow update: if request.auth != null && (
-        // A. ASSISTANT: Can update status (Accept/Decline).
         (request.auth.uid == resource.data.assistantId && 
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
       );
 
       // CREATE/DELETE: Strictly blocked for clients.
-      // 'requestAssistantBooking' and 'cancelAssistantBooking' Cloud Functions handle these.
       allow create, delete: if false; 
+    }
+
+    // =========================================================================
+    // NEW: 6. Rules for the Bills (Billing Ledger) Collection
+    // =========================================================================
+    match /bills/{billId} {
+      // Allow read operations only if the participant is bound to the metadata
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.metadata.seekerId || 
+         request.auth.uid == resource.data.metadata.assistantId);
+      
+      // LOCKOUT: Prevent clients from executing updates, changes, or injections
+      allow write: if false; 
     }
   }
 }

@@ -1,12 +1,7 @@
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
-import {AssistantMatch} from "../models/interfaces";
-import {
-  getDistance,
-  isTimeCompatible,
-  doHoursOverlap,
-} from "../utils/matching-helpers";
-
+import {AssistantMatch, IJob, IAppUser} from "../core/Interfaces";
+import {MatchingEngine} from "../services/MatchingEngine";
 const db = admin.firestore();
 
 export const matchJobToAssistants = onDocumentCreated(
@@ -15,7 +10,7 @@ export const matchJobToAssistants = onDocumentCreated(
     const snapshot = event.data;
     if (!snapshot) return;
 
-    const jobData = snapshot.data();
+    const jobData = snapshot.data() as IJob;
     const jobId = event.params.jobId;
 
     // 1. Check if location exists before continuing
@@ -30,7 +25,8 @@ export const matchJobToAssistants = onDocumentCreated(
     }
 
     // 2. Extract Job details with defaults
-    const jobLocation = jobData.location as admin.firestore.GeoPoint;
+    // Since jobData implements IJob, these fields are fully type-safe!
+    const jobLocation = jobData.location;
     const requiredSkills: string[] = jobData.requiredSkills || [];
 
     try {
@@ -47,7 +43,7 @@ export const matchJobToAssistants = onDocumentCreated(
       // Filter by location, budget, gender and
       // general schedule (weekly working hours)
       const nearbyCandidates = assistantsSnap.docs.filter((doc) => {
-        const assistant = doc.data();
+        const assistant = doc.data() as IAppUser;
 
         // i. HARD FILTERS (Budget & Gender) =============
         // Computationally cheapest filter (simple comparisons)
@@ -56,6 +52,7 @@ export const matchJobToAssistants = onDocumentCreated(
         // daily rate given by the seeker
         if (
           jobData.maxDailyRate &&
+          assistant.dailyRate &&
           assistant.dailyRate > jobData.maxDailyRate
         ) {
           return false;
@@ -74,7 +71,12 @@ export const matchJobToAssistants = onDocumentCreated(
         // ii. SCHEDULE FILTER =============================
         // moderate computational cost
 
-        if (!isTimeCompatible(jobData.workingTimes, assistant.workingTimes)) {
+        if (
+          !MatchingEngine.isTimeCompatible(
+            jobData.workingTimes,
+            assistant.workingTimes || {},
+          )
+        ) {
           return false;
         }
         // =================================================
@@ -82,18 +84,14 @@ export const matchJobToAssistants = onDocumentCreated(
         // iii. GEOLOCATION FILTER ========================
         // Expensive trigonometry math
 
-        const assistantLoc = assistant.location as
-          | admin.firestore.GeoPoint
-          | undefined;
+        const assistantLoc = assistant.location;
 
         if (!assistantLoc) return false;
 
         // Calculate Distance
-        const dist = getDistance(
-          jobLocation.latitude,
-          jobLocation.longitude,
-          assistantLoc.latitude,
-          assistantLoc.longitude,
+        const dist = MatchingEngine.calculateDistance(
+          jobLocation,
+          assistantLoc,
         );
 
         // Only suggest assistants within 40km of Job location
@@ -107,7 +105,7 @@ export const matchJobToAssistants = onDocumentCreated(
       // 5. Stage 2 filtering ==================================================
       // (Booking and skill check)
       const matchChecks = nearbyCandidates.map(async (doc) => {
-        const assistant = doc.data();
+        const assistant = doc.data() as IAppUser;
         const assistantId = doc.id;
 
         // Check booking dates from the database
@@ -130,7 +128,10 @@ export const matchJobToAssistants = onDocumentCreated(
           if (datesOverlap) {
             // If dates overlap, dive into the hours
             // If doHoursOverlap returns true, it's a real conflict
-            return doHoursOverlap(jobData.workingTimes, bData.workingTimes);
+            return MatchingEngine.doHoursOverlap(
+              jobData.workingTimes,
+              bData.workingTimes,
+            );
           }
 
           return false;
@@ -144,16 +145,16 @@ export const matchJobToAssistants = onDocumentCreated(
         );
 
         // Match percentage based on required skills
-        const matchPercentage = requiredSkills.length > 0 ?
-          (matchingSkills.length / requiredSkills.length) * 100 :
-          100;
+        const matchPercentage =
+          requiredSkills.length > 0 ?
+            (matchingSkills.length / requiredSkills.length) * 100 : 100;
 
         const dist = distanceMap.get(assistantId) || 0;
 
         // Logic: Include if they match at least 50% of skills
         // OR are within 15km
         if (matchPercentage >= 50 || dist < 15) {
-          return {
+          const candidateMatch: AssistantMatch = {
             assistantId: doc.id,
             name: assistant.name || "Assistant",
             distance: Number(dist.toFixed(2)),
@@ -162,6 +163,7 @@ export const matchJobToAssistants = onDocumentCreated(
             dailyRate: assistant.dailyRate || 0,
             experienceLevel: assistant.experienceLevel || "unspecified",
           };
+          return candidateMatch;
         }
         return null;
       });
