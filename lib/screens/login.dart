@@ -1,8 +1,9 @@
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
-import 'package:medicare/screens/assistant/assistant_main.dart';
-import 'package:medicare/screens/seeker/seeker_main.dart';
+import 'package:medicare/screens/assistant/assistant_main_page.dart';
+import 'package:medicare/screens/seeker/seeker_main_page.dart';
 import 'package:medicare/screens/admin/admin_main.dart';
 import 'package:medicare/services/auth_service.dart';
 import 'package:medicare/models/app_user.dart';
@@ -63,6 +64,50 @@ class AuthGate extends StatelessWidget {
           stream: authService.appUserStream(snapshot.data!),
 
           builder: (context, userSnapshot) {
+            if (userSnapshot.hasError) {
+              dev.log(
+                "Error loading user stream in AuthGate",
+                name: "medicare.ui.login",
+                error: userSnapshot.error,
+              );
+              return Scaffold(
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 60,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          "A database connection issue occurred.",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Error: ${userSnapshot.error}",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => FirebaseAuth.instance.signOut(),
+                          child: const Text('Go Back'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
             //show a loader
             if (userSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(

@@ -1,4 +1,6 @@
-// Reusable widget to get skills list live from the database
+// ==============================================================================
+//    Reusable widget to get skills list live from the database and display it
+// ==============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

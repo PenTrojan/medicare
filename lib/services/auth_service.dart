@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:medicare/models/app_user.dart';
@@ -31,12 +32,25 @@ class AuthService {
 
     // getting data as a stream from the firestore (.snapshots())
     // convert the document snap to an appuser onject from map()
-    return _db.collection('users').doc(firebaseUser.uid).snapshots().map((doc) {
-      // use polymorphism to create object
-      return AppUser.fromFirestore(
-        doc,
-      ); //  <=== CALLING THE METHOD IN THE USER CLASS (app_user.dart)
-    });
+    return _db
+        .collection('users')
+        .doc(firebaseUser.uid)
+        .snapshots()
+        .map((doc) {
+          // use polymorphism to create object
+          return AppUser.fromFirestore(
+            doc,
+          ); //  <=== CALLING THE METHOD IN THE USER CLASS (app_user.dart)
+        })
+        .handleError((error, stackTrace) {
+          // Structured logging for system-level stream connections
+          dev.log(
+            "Firestore stream connection failed",
+            name: "medicare.auth.stream",
+            error: error,
+            stackTrace: stackTrace,
+          );
+        });
   }
 
   //================================================================================================

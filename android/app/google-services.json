@@ -48,6 +48,42 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:516002987264:android:42fcb91948f23cb6a647e5",
+        "android_client_info": {
+          "package_name": "com.pentrojan.medicare"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "516002987264-fv78t5h707jb6ujbfe17h030opab9m37.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClsFNu7pj87NcjTmoCD2V-MIDsTzaYRws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "516002987264-fv78t5h707jb6ujbfe17h030opab9m37.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "516002987264-n65mrovogovtbo5mprs05rl15bm3k8l2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.medicare"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

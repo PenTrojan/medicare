@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import '../../widgets/location_picker_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:medicare/models/app_user.dart';
 import 'package:medicare/models/assistant.dart';
 import 'package:medicare/services/auth_service.dart';
 import 'package:medicare/services/image_upload_service.dart';
 import 'package:medicare/widgets/skill_selector.dart';
+import 'package:medicare/widgets/availability_selector.dart';
 
 class AssistantReg extends StatefulWidget {
   const AssistantReg({super.key});
@@ -28,7 +30,6 @@ class _AssistantRegState extends State<AssistantReg> {
   final _addressController = TextEditingController();
   final _bioController = TextEditingController();
   final _experienceController = TextEditingController();
-  //final _skillController = TextEditingController();
   final _ageController = TextEditingController();
   final _rateController = TextEditingController();
 
@@ -49,15 +50,6 @@ class _AssistantRegState extends State<AssistantReg> {
   bool _isInitialized = false;
   bool _isGettingLocation = false;
 
-  final List<String> _weekdays = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
   late Map<String, bool> _dayEnabled;
   late Map<String, TimeOfDay?> _dayStart;
   late Map<String, TimeOfDay?> _dayEnd;
@@ -65,9 +57,31 @@ class _AssistantRegState extends State<AssistantReg> {
   @override
   void initState() {
     super.initState();
-    _dayEnabled = {for (var d in _weekdays) d: false};
-    _dayStart = {for (var d in _weekdays) d: null};
-    _dayEnd = {for (var d in _weekdays) d: null};
+    final weekdays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    _dayEnabled = {for (var d in weekdays) d: false};
+    _dayStart = {for (var d in weekdays) d: null};
+    _dayEnd = {for (var d in weekdays) d: null};
+  }
+
+  // cleanup to avoid memory leaks
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _nicController.dispose();
+    _addressController.dispose();
+    _bioController.dispose();
+    _experienceController.dispose();
+    _ageController.dispose();
+    _rateController.dispose();
+    super.dispose();
   }
 
   void _populateFromAssistant(Assistant assistant) {
@@ -158,7 +172,6 @@ class _AssistantRegState extends State<AssistantReg> {
     }
   }
 
-  // ... (keeping _getExpLabel, _getCurrentLocation, _parseTime, _generateWorkingTimesMap from previous response) ...
   String _getExpLabel(ExperienceLevel level) {
     switch (level) {
       case ExperienceLevel.lessThanOne:
@@ -192,6 +205,24 @@ class _AssistantRegState extends State<AssistantReg> {
         ).showSnackBar(const SnackBar(content: Text("Location Error")));
     } finally {
       setState(() => _isGettingLocation = false);
+    }
+  }
+
+  Future<void> _openMapLocationPicker() async {
+    // Open our reusable modal layout viewport and wait for the user to confirm a position choice
+    final GeoPoint? pickedLocation = await showModalBottomSheet<GeoPoint>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          LocationPickerSheet(initialLocation: _currentLocation),
+    );
+
+    // If they confirmed a choice, bind it directly into your form state manager instance
+    if (pickedLocation != null) {
+      setState(() {
+        _currentLocation = pickedLocation;
+      });
     }
   }
 
@@ -384,18 +415,26 @@ class _AssistantRegState extends State<AssistantReg> {
                 const SizedBox(height: 15),
 
                 ListTile(
-                  title: const Text("Home Location"),
-                  subtitle: Text(
-                    _currentLocation == null ? "Not set" : "Location Captured",
-                  ),
-                  trailing: _isGettingLocation
-                      ? const CircularProgressIndicator()
-                      : const Icon(Icons.my_location, color: Colors.blue),
-                  onTap: _getCurrentLocation,
+                  tileColor: _currentLocation == null
+                      ? Colors.red[50]
+                      : Colors.green[50],
                   shape: RoundedRectangleBorder(
-                    side: const BorderSide(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  title: const Text(
+                    "Set Precise Home Location",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    _currentLocation == null
+                        ? "No position selected yet"
+                        : "Coordinates: ${_currentLocation!.latitude.toStringAsFixed(4)}, ${_currentLocation!.longitude.toStringAsFixed(4)}",
+                  ),
+                  trailing: Icon(
+                    Icons.map_outlined,
+                    color: _currentLocation == null ? Colors.red : Colors.green,
+                  ),
+                  onTap: _openMapLocationPicker,
                 ),
                 const SizedBox(height: 15),
 
@@ -449,11 +488,20 @@ class _AssistantRegState extends State<AssistantReg> {
                   ),
 
                 const Divider(height: 40),
-                const Text(
-                  "Working Hours",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+
+                // shared widget to pick availability
+                AvailabilitySelector(
+                  dayEnabled: _dayEnabled,
+                  dayStart: _dayStart,
+                  dayEnd: _dayEnd,
+                  onChanged: (day, enabled, start, end) {
+                    setState(() {
+                      _dayEnabled[day] = enabled;
+                      _dayStart[day] = start;
+                      _dayEnd[day] = end;
+                    });
+                  },
                 ),
-                ..._weekdays.map((day) => _buildDayTile(day)),
 
                 const SizedBox(height: 20),
                 const Text(
@@ -477,53 +525,6 @@ class _AssistantRegState extends State<AssistantReg> {
           );
         },
       ),
-    );
-  }
-
-  // ... (keeping _buildDayTile, _buildTextField, _buildImageUploadTile, _buildSkillInput, _buildProofGallery, _parseTime, _generateWorkingTimesMap from previous response) ...
-  Widget _buildDayTile(String day) {
-    return ExpansionTile(
-      leading: Checkbox(
-        value: _dayEnabled[day],
-        onChanged: (v) => setState(() => _dayEnabled[day] = v!),
-      ),
-      title: Text(day),
-      subtitle: Text(
-        _dayEnabled[day]!
-            ? "${_dayStart[day]?.format(context) ?? '--'} to ${_dayEnd[day]?.format(context) ?? '--'}"
-            : "Unavailable",
-      ),
-      children: [
-        if (_dayEnabled[day]!)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                TextButton(
-                  onPressed: () async {
-                    final t = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
-                    );
-                    if (t != null) setState(() => _dayStart[day] = t);
-                  },
-                  child: const Text("Set Start"),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    final t = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay.now(),
-                    );
-                    if (t != null) setState(() => _dayEnd[day] = t);
-                  },
-                  child: const Text("Set End"),
-                ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 
@@ -575,43 +576,6 @@ class _AssistantRegState extends State<AssistantReg> {
     );
   }
 
-  /*Widget _buildSkillInput() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _skillController,
-                decoration: const InputDecoration(hintText: "Add Skill"),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.add_circle),
-              onPressed: () {
-                if (_skillController.text.isNotEmpty) {
-                  setState(() => _skills.add(_skillController.text.trim()));
-                  _skillController.clear();
-                }
-              },
-            ),
-          ],
-        ),
-        Wrap(
-          spacing: 8,
-          children: _skills
-              .map(
-                (s) => Chip(
-                  label: Text(s),
-                  onDeleted: () => setState(() => _skills.remove(s)),
-                ),
-              )
-              .toList(),
-        ),
-      ],
-    );
-  }*/
-
   Widget _buildProofGallery(String uid) {
     return Wrap(
       spacing: 10,
@@ -650,10 +614,13 @@ class _AssistantRegState extends State<AssistantReg> {
     Map<String, List<String>> map = {};
     _dayEnabled.forEach((day, enabled) {
       if (enabled && _dayStart[day] != null && _dayEnd[day] != null) {
-        map[day] = [
-          "${_dayStart[day]!.hour}:${_dayStart[day]!.minute}",
-          "${_dayEnd[day]!.hour}:${_dayEnd[day]!.minute}",
-        ];
+        // Use padLeft(2, '0') to ensure 9:5 becomes 09:05
+        final startH = _dayStart[day]!.hour.toString().padLeft(2, '0');
+        final startM = _dayStart[day]!.minute.toString().padLeft(2, '0');
+        final endH = _dayEnd[day]!.hour.toString().padLeft(2, '0');
+        final endM = _dayEnd[day]!.minute.toString().padLeft(2, '0');
+
+        map[day] = ["$startH:$startM", "$endH:$endM"];
       }
     });
     return map;
