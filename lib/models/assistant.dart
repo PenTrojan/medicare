@@ -8,9 +8,11 @@ import 'app_user.dart';
 class Assistant extends AppUser {
   Gender _gender = Gender.unspecified;
   String? _profilePicUrl;
+  String? _profileImageUrl;
   int? _age;
   String? _nic;
   String? _nicImageUrl;
+  String? _nicProofImageUrl;
   String? _address;
   GeoPoint? _location;
   List<String> _skills;
@@ -23,6 +25,7 @@ class Assistant extends AppUser {
   double? _rating;
   List<String> _proofText;
   List<String> _proofImageUrls;
+  List<String> _proofDocumentsUrls;
 
   bool _isVerified = false;
   bool _isBooked = false;
@@ -36,7 +39,28 @@ class Assistant extends AppUser {
   }) : _skills = [],
        _workingTimes = {},
        _proofText = [],
-       _proofImageUrls = [];
+       _proofImageUrls = [],
+       _proofDocumentsUrls = [];
+
+  factory Assistant.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
+    final assistant = Assistant.fromMap(doc.id, data);
+
+    assistant._profileImageUrl =
+        (data['profileImageUrl'] as String?) ?? assistant._profilePicUrl;
+    assistant._nicProofImageUrl =
+        (data['nicProofImageUrl'] as String?) ?? assistant._nicImageUrl;
+
+    final proofDocuments =
+        (data['proofDocumentsUrls'] as List?) ??
+        data['proofImageUrls'] as List?;
+    assistant._proofDocumentsUrls = proofDocuments == null
+        ? []
+        : proofDocuments.whereType<String>().toList();
+
+    return assistant;
+  }
 
   factory Assistant.fromMap(String id, Map<String, dynamic> data) {
     final assistant = Assistant(
@@ -60,9 +84,13 @@ class Assistant extends AppUser {
     }
 
     assistant._profilePicUrl = data['profilePicUrl'];
+    assistant._profileImageUrl =
+        (data['profileImageUrl'] as String?) ?? assistant._profilePicUrl;
     assistant._age = data['age'];
     assistant._nic = data['nic'];
     assistant._nicImageUrl = data['nicImageUrl'];
+    assistant._nicProofImageUrl =
+        (data['nicProofImageUrl'] as String?) ?? assistant._nicImageUrl;
     assistant._bio = data['bio'];
     assistant._address = data['address'];
     assistant._rating = (data['rating'] as num?)?.toDouble();
@@ -70,6 +98,9 @@ class Assistant extends AppUser {
     assistant._dailyRate = data['dailyRate'] as int?;
     assistant._skills = List<String>.from(data['skills'] ?? []);
     assistant._proofImageUrls = List<String>.from(data['proofImageUrls'] ?? []);
+    assistant._proofDocumentsUrls = List<String>.from(
+      data['proofDocumentsUrls'] ?? data['proofImageUrls'] ?? [],
+    );
     assistant._isVerified = data['isVerified'] ?? false;
     assistant._isBooked = data['isBooked'] ?? false;
     assistant.isSuspended = data['isSuspended'] ?? false;
@@ -89,9 +120,11 @@ class Assistant extends AppUser {
   // getters for UI to read the existing data
   Gender get gender => _gender;
   String? get profilePicUrl => _profilePicUrl;
+  String? get profileImageUrl => _profileImageUrl;
   int? get age => _age;
   String? get nic => _nic;
   String? get nicImageUrl => _nicImageUrl;
+  String? get nicProofImageUrl => _nicProofImageUrl;
   String? get address => _address;
   GeoPoint? get location => _location;
   ExperienceLevel? get experienceLevel => _experienceLevel;
@@ -103,6 +136,7 @@ class Assistant extends AppUser {
   int? get dailyRate => _dailyRate;
   List<String> get proofText => _proofText;
   List<String> get proofImageUrls => _proofImageUrls;
+  List<String> get proofDocumentsUrls => _proofDocumentsUrls;
   bool get isVerified => _isVerified;
   bool get isBooked => _isBooked;
 
@@ -156,8 +190,10 @@ class Assistant extends AppUser {
       'gender': _gender.name,
       'age': _age,
       'profilePicUrl': _profilePicUrl,
+      'profileImageUrl': _profileImageUrl,
       'nic': _nic,
       'nicImageUrl': _nicImageUrl,
+      'nicProofImageUrl': _nicProofImageUrl,
       'location': _location,
       'skills': _skills,
       'dailyRate': _dailyRate,
@@ -172,6 +208,7 @@ class Assistant extends AppUser {
       'workingTimes': _workingTimes,
       'proofText': _proofText,
       'proofImageUrls': _proofImageUrls,
+      'proofDocumentsUrls': _proofDocumentsUrls,
       'registrationComplete': registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
     };
