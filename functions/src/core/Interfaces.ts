@@ -47,11 +47,11 @@ export interface IInvitation {
   seekerId: string;
   patientName: string;
   status:
-    | "pending"
-    | "accepted"
-    | "declined"
-    | "cancelled"
-    | "cancelled_by_system";
+  | "pending"
+  | "accepted"
+  | "declined"
+  | "cancelled"
+  | "cancelled_by_system";
   reason?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
@@ -82,6 +82,7 @@ export interface IJob {
 /**
  * 5. BILLING LEDGER CONTRACT
  * Standardized contract mirroring your app's internal invoice fields.
+ * Immutable Financial Ledger Account Document
  */
 export interface IBill {
   id: string;

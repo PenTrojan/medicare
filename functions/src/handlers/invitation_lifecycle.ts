@@ -1,5 +1,8 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import {InvitationEntity} from "../core/InvitationEntity";
+
+const db = admin.firestore();
 
 // ==============================================================
 // ===================== 1. CREATION ============================
@@ -12,15 +15,15 @@ export const requestAssistantBooking = onCall(async (request) => {
   }
 
   const {jobId, assistantId} = request.data;
-  const db = admin.firestore();
-
-  // Create the Composite ID to prevent duplicates
-  const inviteId = `${jobId}_${assistantId}`;
+  if (!jobId || !assistantId) {
+    throw new HttpsError("invalid-argument", "Missing job or assistant ID.");
+  }
 
   try {
     return await db.runTransaction(async (transaction) => {
       const jobRef = db.collection("jobs").doc(jobId);
-      const inviteRef = db.collection("invitations").doc(inviteId);
+      const tempInvite = new InvitationEntity(jobId, assistantId, "", "");
+      const inviteRef = db.collection("invitations").doc(tempInvite.id);
 
       const [jobDoc, inviteDoc] = await Promise.all([
         transaction.get(jobRef),
@@ -35,30 +38,27 @@ export const requestAssistantBooking = onCall(async (request) => {
       // 3. De-duplication Check
       // only allow a new invitation if one doesn't exist OR
       // if the existing one was declined OR cancelled
-      if (
-        inviteDoc.exists &&
-        inviteDoc.data()?.status !== "declined" &&
-        inviteDoc.data()?.status !== "cancelled"
-      ) {
-        throw new HttpsError(
-          "already-exists",
-          "An active invitation already exists for this assistant.",
-        );
+      if (inviteDoc.exists) {
+        const activeInvite = InvitationEntity.fromFirestore(inviteDoc.data());
+        if (
+          activeInvite.status !== "declined" &&
+          activeInvite.status !== "cancelled"
+        ) {
+          throw new HttpsError(
+            "already-exists",
+            "An active invitation already exists for this assistant."
+          );
+        }
       }
-
       // 4. Create or Reset Invitation
-      transaction.set(
-        inviteRef,
-        {
-          jobId,
-          assistantId,
-          seekerId: request.auth?.uid,
-          patientName: jobDoc.data()?.patientName, // for easy UI rendering
-          status: "pending",
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        {merge: true},
-      ); // Merge: true is important if resetting a declined invite
+      const invitation = new InvitationEntity(
+        jobId,
+        assistantId,
+        request.auth!.uid,
+        jobDoc.data()?.patientName || "Patient"
+      );
+
+      transaction.set(inviteRef, invitation.toFirestoreMap(), {merge: true});
 
       return {success: true, invitationId: inviteRef.id};
     });
@@ -83,12 +83,11 @@ export const cancelAssistantBooking = onCall(async (request) => {
   }
 
   const {jobId, assistantId} = request.data;
-  const inviteId = `${jobId}_${assistantId}`;
-  const db = admin.firestore();
+  const tempInvite = new InvitationEntity(jobId, assistantId, "", "");
+  const inviteRef = db.collection("invitations").doc(tempInvite.id);
 
   try {
     return await db.runTransaction(async (transaction) => {
-      const inviteRef = db.collection("invitations").doc(inviteId);
       const inviteDoc = await transaction.get(inviteRef);
 
       // 2. Validate Ownership & Existence
@@ -96,11 +95,15 @@ export const cancelAssistantBooking = onCall(async (request) => {
         throw new HttpsError("not-found", "Invitation does not exist.");
       }
 
-      if (inviteDoc.data()?.seekerId !== request.auth?.uid) {
-        throw new HttpsError(
-          "permission-denied",
-          "You do not own this request.",
-        );
+      const invitation = InvitationEntity.fromFirestore(inviteDoc.data());
+
+      try {
+        if (invitation.seekerId !== request.auth?.uid) {
+          throw new Error("Ownership identity credential mismatch.");
+        }
+        invitation.cancel();
+      } catch (domainError: any) {
+        throw new HttpsError("failed-precondition", domainError.message);
       }
 
       // 3. Perform Soft Delete (Status Update)
@@ -113,6 +116,7 @@ export const cancelAssistantBooking = onCall(async (request) => {
     });
   } catch (error) {
     if (error instanceof HttpsError) throw error;
+    console.error("Cancel Error:", error);
     throw new HttpsError("internal", "Failed to cancel booking.");
   }
 });
@@ -129,10 +133,18 @@ export const acceptInvitation = onCall(async (request) => {
 
   const {jobId, assistantId} = request.data;
   const uid = request.auth.uid;
-  const inviteId = `${jobId}_${assistantId}`;
-  const db = admin.firestore();
+
+  const tempInvite = new InvitationEntity(jobId, assistantId, "", "");
+  const inviteId = tempInvite.id;
 
   try {
+    // Read conflicting open data options out-of-band before writing
+    const otherInvitesSnapshot = await db
+      .collection("invitations")
+      .where("jobId", "==", jobId)
+      .where("status", "==", "pending")
+      .get();
+
     return await db.runTransaction(async (transaction) => {
       const inviteRef = db.collection("invitations").doc(inviteId);
       const jobRef = db.collection("jobs").doc(jobId);
@@ -146,25 +158,20 @@ export const acceptInvitation = onCall(async (request) => {
 
       // 2. Initial Validations
       if (!inviteDoc.exists || !jobDoc.exists) {
-        throw new Error("Required documents (Job or Invitation) not found.");
+        throw new HttpsError("not-found", "Required documents missing.");
       }
-
-      const inviteData = inviteDoc.data();
       const jobData = jobDoc.data();
+      const invitation = InvitationEntity.fromFirestore(inviteDoc.data());
 
-      // Security Check: Only the invited assistant can accept
-      if (inviteData?.assistantId !== uid) {
-        throw new Error("Unauthorized: You were not invited to this job.");
-      }
-
-      // State Check: Prevent double-processing
-      if (inviteData?.status !== "pending") {
-        throw new Error("This invitation is no longer pending.");
+      try {
+        invitation.accept(uid);
+      } catch (domainError: any) {
+        throw new HttpsError("failed-precondition", domainError.message);
       }
 
       // 3. Update the Invitation Lifecycle
       transaction.update(inviteRef, {
-        status: "accepted",
+        status: invitation.status,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
@@ -195,13 +202,8 @@ export const acceptInvitation = onCall(async (request) => {
       });
 
       // 7. Cleanup: Automatically cancel other pending invitations for this Job
-      const otherInvitesQuery = await db
-        .collection("invitations")
-        .where("jobId", "==", jobId)
-        .where("status", "==", "pending")
-        .get();
-
-      otherInvitesQuery.docs.forEach((doc) => {
+      // Using Values read earlier to avoid race conditions
+      otherInvitesSnapshot.docs.forEach((doc) => {
         if (doc.id !== inviteId) {
           transaction.update(doc.ref, {
             status: "cancelled_by_system",
@@ -210,22 +212,12 @@ export const acceptInvitation = onCall(async (request) => {
           });
         }
       });
-
       return {success: true, message: "Job successfully accepted and booked."};
     });
-  } catch (error: unknown) {
-    // Log the error for Firebase logs
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
     console.error("Accept Invitation Error:", error);
-
-    // Safely extract the message
-    let errorMessage = "Failed to accept job.";
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-
-    // Pass the specific error back to Flutter
-    throw new HttpsError("internal", errorMessage);
+    throw new HttpsError("internal", "Failed to resolve invitation accept.");
   }
 });
 
@@ -240,49 +232,40 @@ export const declineInvitation = onCall(async (request) => {
   }
 
   const {jobId, assistantId} = request.data;
-
-  // Reuse the composite ID logic
-  const inviteId = `${jobId}_${assistantId}`;
-  const db = admin.firestore();
+  const tempInvite = new InvitationEntity(jobId, assistantId, "", "");
+  const inviteRef = db.collection("invitations").doc(tempInvite.id);
 
   try {
     return await db.runTransaction(async (transaction) => {
-      const inviteRef = db.collection("invitations").doc(inviteId);
       const inviteDoc = await transaction.get(inviteRef);
 
       // 2. Validate Existence
       if (!inviteDoc.exists) {
-        throw new Error("Invitation not found.");
+        throw new HttpsError("not-found", "Invitation target not found.");
       }
 
-      // 3. Security: Only the invited assistant can decline
-      if (inviteDoc.data()?.assistantId !== request.auth?.uid) {
-        throw new Error("You are not authorized to decline this invitation.");
-      }
+      const invitation = InvitationEntity.fromFirestore(inviteDoc.data());
 
-      // 4. State Check: Can only decline if it's still pending
-      if (inviteDoc.data()?.status !== "pending") {
-        throw new Error("Invitation is no longer pending.");
+      try {
+        if (!request.auth) {
+          throw new HttpsError("unauthenticated", "Auth required.");
+        }
+        invitation.decline(request.auth!.uid);
+      } catch (domainError: any) {
+        throw new HttpsError("failed-precondition", domainError.message);
       }
 
       // 5. Perform the update
       transaction.update(inviteRef, {
-        status: "declined",
+        status: invitation.status,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
       return {success: true};
     });
-  } catch (error: unknown) {
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
     console.error("Decline Transaction Error:", error);
-
-    // Default message in case the error isn't a standard object
-    let message = "Failed to decline invitation.";
-
-    if (error instanceof Error) {
-      message = error.message;
-    }
-
-    throw new HttpsError("internal", message);
+    throw new HttpsError("internal", "Failed to decline invitation.");
   }
 });

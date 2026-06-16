@@ -172,6 +172,9 @@ class PaymentsPage extends StatelessWidget {
             final escrow = data['escrowSummary'] as Map<String, dynamic>;
             final pricing = data['pricingStructure'] as Map<String, dynamic>;
 
+            final metadata = data['metadata'] as Map<String, dynamic>?;
+            final String cleanJobId = metadata?['jobId'] ?? data['id'] ?? '';
+
             final double displayAmount = isSeeker
                 ? (escrow['totalRequiredFromSeeker'] as num).toDouble()
                 : (data['financialBreakdown']['netAssistantPayout'] as num)
@@ -190,7 +193,7 @@ class PaymentsPage extends StatelessWidget {
                   child: Icon(Icons.receipt_long, color: Color(0xFF3B82F6)),
                 ),
                 title: Text(
-                  "Arrangement Ledger ID: ${data['id'].toString().substring(0, 6).toUpperCase()}",
+                  "Arrangement Ledger ID: ${cleanJobId.substring(0, 6).toUpperCase()}",
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(
@@ -209,7 +212,7 @@ class PaymentsPage extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => BillingDetailsPage(
-                        jobId: data['id'],
+                        jobId: cleanJobId,
                         isSeeker: isSeeker,
                       ),
                     ),

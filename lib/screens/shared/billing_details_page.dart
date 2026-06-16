@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../models/bill_model.dart';
+import '../../widgets/invoice_breakdown_card.dart';
 
 class BillingDetailsPage extends StatelessWidget {
   final String jobId;
-  final bool
-  isSeeker; // Dynamically configures layout views based on persona role
+  final bool isSeeker; // Configures active payment context views dynamically
 
   const BillingDetailsPage({
     super.key,
@@ -29,8 +30,9 @@ class BillingDetailsPage extends StatelessWidget {
             .doc(jobId)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError)
+          if (snapshot.hasError) {
             return Center(child: Text("Error: ${snapshot.error}"));
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -40,67 +42,24 @@ class BillingDetailsPage extends StatelessWidget {
             );
           }
 
-          final billData = snapshot.data!.data() as Map<String, dynamic>;
-          final pricing = billData['pricingStructure'] as Map<String, dynamic>;
-          final breakdown =
-              billData['financialBreakdown'] as Map<String, dynamic>;
-          final escrow = billData['escrowSummary'] as Map<String, dynamic>;
+          // Convert raw document map into our validated type-safe model
+          final rawData = snapshot.data!.data() as Map<String, dynamic>;
+          final bill = BillModel.fromMap(rawData);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildStatusBanner(escrow['financialStatus']),
+                _buildStatusBanner(bill.escrowSummary.financialStatus),
                 const SizedBox(height: 24),
-                _buildLedgerSection(
-                  title: "Contract Metrics",
-                  rows: [
-                    _ledgerRow(
-                      "Total Duration",
-                      "${pricing['totalDays']} Days",
-                    ),
-                    _ledgerRow(
-                      "Agreed Rate",
-                      "Rs. ${pricing['dailyRate']} / Day",
-                    ),
-                    _ledgerRow(
-                      "Gross Value",
-                      "Rs. ${pricing['grossContractValue']}",
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildLedgerSection(
-                  title: "Financial Ledger Particulars",
-                  rows: isSeeker
-                      ? [
-                          _ledgerRow(
-                            "Regulatory Surcharges (2%)",
-                            "Rs. ${breakdown['taxAmount']}",
-                          ),
-                          const Divider(),
-                          _ledgerRow(
-                            "Total Consolidated Liability",
-                            "Rs. ${escrow['totalRequiredFromSeeker']}",
-                            isBold: true,
-                          ),
-                        ]
-                      : [
-                          _ledgerRow(
-                            "System Application Fee (10%)",
-                            "- Rs. ${breakdown['platformFeeAmount']}",
-                          ),
-                          const Divider(),
-                          _ledgerRow(
-                            "Net Cleared Earnings Payout",
-                            "Rs. ${breakdown['netAssistantPayout']}",
-                            isBold: true,
-                          ),
-                        ],
-                ),
+
+                // Unified modular widget handles persona-based math splits
+                InvoiceBreakdownCard(bill: bill),
+
                 const SizedBox(height: 40),
-                if (isSeeker && escrow['financialStatus'] == "GENERATED")
+                if (isSeeker &&
+                    bill.escrowSummary.financialStatus == "GENERATED")
                   ElevatedButton(
                     onPressed: () => _initializeSecurePaymentGateway(context),
                     style: ElevatedButton.styleFrom(
@@ -161,70 +120,14 @@ class BillingDetailsPage extends StatelessWidget {
         children: [
           Icon(Icons.shield_outlined, color: bannerColor),
           const SizedBox(width: 12),
-          Text(
-            displayMsg,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: bannerColor,
-              fontSize: 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLedgerSection({
-    required String title,
-    required List<Widget> rows,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Colors.blueGrey,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(children: rows),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _ledgerRow(String label, String value, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: const Color(0xFF1E293B),
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+          Expanded(
+            child: Text(
+              displayMsg,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: bannerColor,
+                fontSize: 14,
+              ),
             ),
           ),
         ],

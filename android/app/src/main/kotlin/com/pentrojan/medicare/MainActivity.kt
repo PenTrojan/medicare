@@ -1,4 +1,4 @@
-package com.example.medicare
+package com.pentrojan.medicare
 
 import io.flutter.embedding.android.FlutterActivity
 

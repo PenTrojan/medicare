@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import {JobEntity} from "../core/JobEntity";
+import {BillEntity} from "../core/BillEntity";
 import {InvitationEntity} from "../core/InvitationEntity";
 import {IJob, IInvitation} from "../core/Interfaces";
 
@@ -123,6 +124,33 @@ export class TransactionContext {
     const ref = this.db.collection("jobs").doc(job.id);
     this.tx.update(ref, {
       ...job.toFirestoreMap(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
+
+  /**
+   * Retrieves a billing document inside the isolated transaction context.
+   * @param {string} jobId The distinct identifier of the target care case.
+   * @return {Promise<BillEntity | null>} Resolves with the entity or null.
+   */
+  public async getBill(jobId: string): Promise<BillEntity | null> {
+    const ref = this.db.collection("bills").doc(jobId);
+    const snap = await this.tx.get(ref);
+
+    if (!snap.exists) return null;
+    return BillEntity.fromFirestore(snap.data());
+  }
+
+  /**
+   * Persists a structurally verified BillEntity instance back to Firestore.
+   * @param {BillEntity} bill The active domain entity instance to serialize.
+   * @return {void}
+   */
+  public saveBill(bill: BillEntity): void {
+    const ref = this.db.collection("bills").doc(bill.id);
+    this.tx.set(ref, {
+      ...bill.toFirestoreMap(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }
