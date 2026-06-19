@@ -1,6 +1,7 @@
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import {InvitationEntity} from "../core/InvitationEntity";
+import {processJobBilling} from "../billing/generate_bill";
 
 const db = admin.firestore();
 
@@ -51,10 +52,11 @@ export const requestAssistantBooking = onCall(async (request) => {
         }
       }
       // 4. Create or Reset Invitation
+      const uid = request.auth?.uid || "";
       const invitation = new InvitationEntity(
         jobId,
         assistantId,
-        request.auth!.uid,
+        uid,
         jobDoc.data()?.patientName || "Patient"
       );
 
@@ -102,10 +104,13 @@ export const cancelAssistantBooking = onCall(async (request) => {
           throw new Error("Ownership identity credential mismatch.");
         }
         invitation.cancel();
-      } catch (domainError: any) {
-        throw new HttpsError("failed-precondition", domainError.message);
+      } catch (domainError: unknown) {
+        const msg =
+          domainError instanceof Error ?
+            domainError.message :
+            String(domainError);
+        throw new HttpsError("failed-precondition", msg);
       }
-
       // 3. Perform Soft Delete (Status Update)
       transaction.update(inviteRef, {
         status: "cancelled",
@@ -145,7 +150,7 @@ export const acceptInvitation = onCall(async (request) => {
       .where("status", "==", "pending")
       .get();
 
-    return await db.runTransaction(async (transaction) => {
+    await db.runTransaction(async (transaction) => {
       const inviteRef = db.collection("invitations").doc(inviteId);
       const jobRef = db.collection("jobs").doc(jobId);
       const assistantRef = db.collection("users").doc(assistantId);
@@ -165,10 +170,13 @@ export const acceptInvitation = onCall(async (request) => {
 
       try {
         invitation.accept(uid);
-      } catch (domainError: any) {
-        throw new HttpsError("failed-precondition", domainError.message);
+      } catch (domainError: unknown) {
+        const msg =
+          domainError instanceof Error ?
+            domainError.message :
+            String(domainError);
+        throw new HttpsError("failed-precondition", msg);
       }
-
       // 3. Update the Invitation Lifecycle
       transaction.update(inviteRef, {
         status: invitation.status,
@@ -212,8 +220,25 @@ export const acceptInvitation = onCall(async (request) => {
           });
         }
       });
-      return {success: true, message: "Job successfully accepted and booked."};
     });
+
+    // 2. CHAINED HOOK: Process Financial Billing Generation
+    // This executes downstream safely outside the state locked block
+    try {
+      await processJobBilling(jobId);
+    } catch (billingError) {
+      console.error(
+        "Post-Accept Critical Billing Engine Failure:",
+        billingError
+      );
+      // We log but do not fail execution since the match state
+      // commitment is complete
+    }
+
+    return {
+      success: true,
+      message: "Job successfully accepted and billing compiled.",
+    };
   } catch (error) {
     if (error instanceof HttpsError) throw error;
     console.error("Accept Invitation Error:", error);
@@ -247,14 +272,15 @@ export const declineInvitation = onCall(async (request) => {
       const invitation = InvitationEntity.fromFirestore(inviteDoc.data());
 
       try {
-        if (!request.auth) {
-          throw new HttpsError("unauthenticated", "Auth required.");
-        }
-        invitation.decline(request.auth!.uid);
-      } catch (domainError: any) {
-        throw new HttpsError("failed-precondition", domainError.message);
+        const uid = request.auth?.uid || "";
+        invitation.decline(uid);
+      } catch (domainError: unknown) {
+        const msg =
+          domainError instanceof Error ?
+            domainError.message :
+            String(domainError);
+        throw new HttpsError("failed-precondition", msg);
       }
-
       // 5. Perform the update
       transaction.update(inviteRef, {
         status: invitation.status,

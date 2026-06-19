@@ -1,17 +1,15 @@
-import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import {TransactionContext} from "../services/TransactionContext";
 import {BillEntity} from "../core/BillEntity";
 
-export const generateJobBill = onCall({cors: true}, async (request) => {
-  if (!request.auth) {
-    throw new HttpsError(
-      "unauthenticated",
-      "Authentication credentials invalid.",
-    );
-  }
-
-  const {jobId} = request.data;
+/**
+ * Processes and generates the billing ledger configuration for a given job.
+ * Called internally during the invitation acceptance lifecycle.
+ *
+ * @param {string} jobId - The target unique identifier of the job.
+ * @return {Promise<any>} The transaction mapping status metadata outcome.
+ */export async function processJobBilling(jobId: string) {
   if (!jobId) {
     throw new HttpsError("invalid-argument", "Missing target jobId parameter.");
   }
@@ -36,7 +34,7 @@ export const generateJobBill = onCall({cors: true}, async (request) => {
       }
 
       try {
-        // Delegate calculation entirely to the hourly domain engine
+      // Delegate calculation entirely to the hourly domain engine
         const bill = BillEntity.calculate(
           job.id,
           job.seekerId,
@@ -72,4 +70,4 @@ export const generateJobBill = onCall({cors: true}, async (request) => {
       "An error occurred within the isolated billing domain engine.",
     );
   }
-});
+}
