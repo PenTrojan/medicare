@@ -172,6 +172,28 @@ export class BillEntity implements IBill {
   }
 
   /**
+  * Transitions the billing ledger entity status into secure escrow holding.
+  * Allocates the required balance matching the seeker funding obligations.
+  * Because properties are readonly this return a new object wit
+  * updated values.
+  *
+  * @return {BillEntity} A newly instantiated Bill entity with updated state.
+  */
+  public transitionToEscrowHeld(): BillEntity {
+    return new BillEntity(
+      this.id,
+      this.metadata,
+      this.pricingStructure,
+      this.financialBreakdown,
+      {
+        ...this.escrowSummary,
+        financialStatus: "ESCROW_HELD",
+        currentEscrowBalance: this.escrowSummary.totalRequiredFromSeeker,
+      }
+    );
+  }
+
+  /**
    * Serializes the domain class properties back into database schema.
    * @return {Record<string, unknown>} Transformed database collection mapper.
    */

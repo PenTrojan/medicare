@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/bill_model.dart';
 import '../../widgets/invoice_breakdown_card.dart';
 
@@ -12,6 +13,49 @@ class BillingDetailsPage extends StatelessWidget {
     required this.jobId,
     required this.isSeeker,
   });
+
+  // Helper method to block user duplicate interactions during execution transactions
+  void _showLoadingOverlay(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Future<void> _processEscrowPayment(BuildContext context) async {
+    _showLoadingOverlay(context);
+
+    try {
+      // Invoke the secure backend transaction layer instead of a direct write
+      await FirebaseFunctions.instance.httpsCallable('confirmEscrowPayment').call({
+        'jobId': jobId,
+        // Seeker ID validation occurs server side automatically via token authentication or passed values
+      });
+
+      if (context.mounted) {
+        Navigator.pop(context); // Remove loading indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Payment Authorized! Capital locked in secured escrow.",
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Remove loading indicator
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Payment Execution Failed: ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,29 +99,15 @@ class BillingDetailsPage extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 // Unified modular widget handles persona-based math splits
-                InvoiceBreakdownCard(bill: bill),
-
-                const SizedBox(height: 40),
-                if (isSeeker &&
-                    bill.escrowSummary.financialStatus == "GENERATED")
-                  ElevatedButton(
-                    onPressed: () => _initializeSecurePaymentGateway(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B82F6),
-                      minimumSize: const Size(double.infinity, 54),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      "Authorize Payment Capture",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                // Unified modular widget handles persona action blocks dynamically
+                InvoiceBreakdownCard(
+                  bill: bill,
+                  onPayPressed:
+                      (isSeeker &&
+                          bill.escrowSummary.financialStatus == "GENERATED")
+                      ? () => _processEscrowPayment(context)
+                      : null, // Leaves it completely hidden for assistants/history logs!
+                ),
               ],
             ),
           );
@@ -131,14 +161,6 @@ class BillingDetailsPage extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _initializeSecurePaymentGateway(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Connecting securely to Stripe checkout systems..."),
       ),
     );
   }

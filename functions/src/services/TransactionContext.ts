@@ -154,4 +154,18 @@ export class TransactionContext {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   }
+  /**
+   * Commits localized state updates made to a BillEntity instance
+   * back down to the target database collection path.
+   *
+   * @param {BillEntity} bill - The modified domain entity instance.
+   * @return {void}
+   */
+  public updateBill(bill: BillEntity): void {
+    const ref = this.db.collection("bills").doc(bill.id);
+    this.tx.update(ref, {
+      ...bill.toFirestoreMap(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  }
 }

@@ -12,4 +12,4 @@ export {cancelAssistantBooking} from "./handlers/invitation_lifecycle";
 export {acceptInvitation} from "./handlers/invitation_lifecycle";
 export {declineInvitation} from "./handlers/invitation_lifecycle";
 
-// export {generateJobBill} from "./billing/generate_bill";
+export {confirmEscrowPayment} from "./billing/confirm_payment";
