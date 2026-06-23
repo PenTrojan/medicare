@@ -37,24 +37,37 @@ export class JobEntity implements IJob {
     public assignedAssistantId?: string,
     public topMatches: AssistantMatch[] = [],
   ) {}
+
   /**
-   * Domain Rule Invariant: Evaluates timeline spans and calculates
-   * gross duration.
-   * @return {number} The absolute span quantity in integer days.
-   * @throws {Error} Throws if chronological indices cross boundaries.
+   * Domain Rule Invariant: Shifts job from assigned state into active progress.
    */
-  public calculateDurationDays(): number {
-    const startMs = this.startDate.toDate().getTime();
-    const endMs = this.endDate.toDate().getTime();
-    const delta = endMs - startMs;
-
-    if (delta < 0) {
-      throw new Error("Domain Rule Exception: End date precedes start date.");
+  public activate(): void {
+    if (this.status !== "assigned") {
+      throw new Error("Domain Rule Exception: Job must be assigned to start.");
     }
-
-    // Converts discrepancy into ceiling boundaries (Min 1 day billing)
-    return Math.max(1, Math.ceil(delta / (1000 * 60 * 60 * 24)));
+    this.status = "in_progress";
   }
+
+  /**
+   * Domain Rule Invariant: Closes out a completed job safely.
+   */
+  public complete(): void {
+    if (this.status !== "in_progress") {
+      throw new Error("Domain Rule Exception: Only running jobs can complete.");
+    }
+    this.status = "completed";
+  }
+
+  /**
+   * Domain Rule Invariant: Handles manual early cancellation routing.
+   */
+  public cancelEarly(): void {
+    if (this.status !== "assigned" && this.status !== "in_progress") {
+      throw new Error("Domain Rule Exception: Job is not in an active state.");
+    }
+    this.status = "cancelled";
+  }
+
   /**
    * Domain Rule Invariant: Safely shifts status checkpoints.
    * Ensures that race conditions cannot double-assign a filled job.

@@ -36,7 +36,7 @@ class AssistantJobsPage extends StatelessWidget {
             Expanded(
               child: _buildFilteredJobStream(
                 uid: uid,
-                targetStatuses: [JobStatus.completed],
+                targetStatuses: [JobStatus.completed, JobStatus.cancelled],
               ),
             ),
           ],
@@ -93,7 +93,7 @@ class AssistantJobsPage extends StatelessWidget {
             // Tab 2: Currently running/assigned engagements
             _buildFilteredJobStream(
               uid: user.uid,
-              targetStatuses: [JobStatus.assigned],
+              targetStatuses: [JobStatus.assigned, JobStatus.in_progress],
             ),
           ],
         ),

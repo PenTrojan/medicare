@@ -206,4 +206,131 @@ export class BillEntity implements IBill {
       escrowSummary: this.escrowSummary,
     };
   }
+
+  /**
+   * Domain Rule Invariant: Releases full escrow balance directly to the
+   * assistant upon natural lifecycle completion.
+   * @return {BillEntity} A newly instantiated Bill entity with updated state.
+   * @throws {Error} Throws if the current ledger status is not ESCROW_HELD.
+   */
+  public releaseFullEscrow(): BillEntity {
+    if (this.escrowSummary.financialStatus !== "ESCROW_HELD") {
+      throw new Error("Domain Rule Exception: Balance is not held in escrow.");
+    }
+
+    return new BillEntity(
+      this.id,
+      this.metadata,
+      this.pricingStructure,
+      this.financialBreakdown,
+      {
+        ...this.escrowSummary,
+        currentEscrowBalance: 0,
+        financialStatus: "RELEASED",
+      }
+    );
+  }
+
+  /**
+   * Domain Rule Invariant: Computes pro-rata early cancellation financial
+   * splits using exact accumulated shift hours.
+   * Evaluates the specific scheduled calendar blocks to ensure the ratio
+   * is based strictly on worked shift hours vs total scheduled hours.
+   *
+   * @param {number} startMs - The timestamp for the job's scheduled start.
+   * @param {number} endMs - The timestamp for the job's scheduled conclusion.
+   * @param {number} nowMs - The precise timestamp of the cancellation trigger.
+   * @param {Record<string, string[]>} workingTimes - The schedule matrix.
+   * @return {BillEntity} A newly instantiated Bill entity with updated state.
+   * @throws {Error} Throws if the ledger context is not locked in ESCROW_HELD.
+   */
+  public calculateProRataCancellation(
+    startMs: number,
+    endMs: number,
+    nowMs: number,
+    workingTimes: Record<string, string[]>
+  ): BillEntity {
+    if (this.escrowSummary.financialStatus !== "ESCROW_HELD") {
+      throw new Error("Domain Rule Exception: No escrow funds are locked.");
+    }
+
+    let totalHours = 0;
+    let workedHours = 0;
+    const weekDays = [
+      "Sunday", "Monday", "Tuesday", "Wednesday",
+      "Thursday", "Friday", "Saturday",
+    ];
+
+    // Normalize to midnight to step cleanly through full calendar days
+    const currentCursor = new Date(startMs);
+    currentCursor.setHours(0, 0, 0, 0);
+    const endCursor = new Date(endMs);
+    endCursor.setHours(23, 59, 59, 999);
+
+    while (currentCursor.getTime() <= endCursor.getTime()) {
+      const dayName = weekDays[currentCursor.getDay()];
+      const timeArray = workingTimes[dayName];
+
+      if (timeArray && timeArray.length >= 2) {
+        const [startH, startM] = timeArray[0].split(":").map(Number);
+        const [endH, endM] = timeArray[1].split(":").map(Number);
+
+        const shiftStartDec = startH + startM / 60;
+        const shiftEndDec = endH + endM / 60;
+        const shiftDuration = Math.max(0, shiftEndDec - shiftStartDec);
+
+        totalHours += shiftDuration;
+
+        // Calculate exact overlap up to the cancellation trigger (nowMs)
+        const baseTimeMs = currentCursor.getTime();
+        const shiftStartMs = baseTimeMs + (startH * 3600000) + (startM * 60000);
+        const shiftEndMs = baseTimeMs + (endH * 3600000) + (endM * 60000);
+
+        if (nowMs >= shiftEndMs) {
+          // The shift is fully in the past
+          workedHours += shiftDuration;
+        } else if (nowMs > shiftStartMs && nowMs < shiftEndMs) {
+          // The cancellation happened right in the middle of this shift!
+          workedHours += (nowMs - shiftStartMs) / 3600000;
+        }
+      }
+      // Advance to the next calendar day
+      currentCursor.setDate(currentCursor.getDate() + 1);
+    }
+
+    let completionRatio = 0;
+    if (totalHours > 0) {
+      completionRatio = workedHours / totalHours;
+    } else {
+      // Fallback safety if the schedule matrix is completely empty
+      const flatTotal = endMs - startMs;
+      const flatElapsed = Math.max(0, Math.min(nowMs - startMs, flatTotal));
+      completionRatio = flatTotal > 0 ? flatElapsed / flatTotal : 0;
+    }
+
+    // Clamp ratio strictly between 0 and 1 to prevent math anomalies
+    completionRatio = Math.max(0, Math.min(1, completionRatio));
+
+    const totalHeld = this.escrowSummary.totalRequiredFromSeeker;
+    const assistantPayout = Math.round(
+      (totalHeld * completionRatio) * 100
+    ) / 100;
+    const seekerRefund = Math.round((totalHeld - assistantPayout) * 100) / 100;
+
+    return new BillEntity(
+      this.id,
+      this.metadata,
+      this.pricingStructure,
+      {
+        ...this.financialBreakdown,
+        netAssistantPayout: assistantPayout,
+      },
+      {
+        ...this.escrowSummary,
+        returnedToSeeker: seekerRefund,
+        currentEscrowBalance: 0,
+        financialStatus: "PARTIALLY_REFUNDED",
+      }
+    );
+  }
 }

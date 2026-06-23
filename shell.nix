@@ -37,8 +37,7 @@ in
     export ANDROID_HOME="${androidSdk}/libexec/android-sdk"
     export ANDROID_SDK_ROOT="${androidSdk}/libexec/android-sdk"
     export JAVA_HOME="${pkgs.jdk17.home}"
-    export CHROME_EXECUTABLE="${pkgs.librewolf}/bin/librewolf"
-    
+        
     export GRADLE_USER_HOME="$PWD/.gradle_home"
     export PUB_CACHE="$PWD/.pub_cache"
 

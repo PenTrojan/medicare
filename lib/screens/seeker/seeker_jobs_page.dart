@@ -40,7 +40,7 @@ class SeekerJobsPage extends StatelessWidget {
             ),
             Expanded(
               child: SeekerJobDetailsPage(
-                filterStatuses: [JobStatus.completed],
+                filterStatuses: [JobStatus.completed, JobStatus.cancelled],
               ),
             ),
           ],
@@ -98,7 +98,9 @@ class SeekerJobsPage extends StatelessWidget {
                 JobStatus.no_matches,
               ],
             ),
-            SeekerJobDetailsPage(filterStatuses: [JobStatus.assigned]),
+            SeekerJobDetailsPage(
+              filterStatuses: [JobStatus.assigned, JobStatus.in_progress],
+            ),
           ],
         ),
       ),

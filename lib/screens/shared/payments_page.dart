@@ -37,7 +37,7 @@ class PaymentsPage extends StatelessWidget {
             Expanded(
               child: _buildBillingListStream(
                 uid: uid,
-                targetStatuses: ["RELEASED", "REFUNDED"],
+                targetStatuses: ["RELEASED", "REFUNDED", "PARTIALLY_REFUNDED"],
               ),
             ),
           ],

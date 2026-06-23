@@ -123,7 +123,11 @@ export const matchJobToAssistants = onDocumentCreated(
           const bData = bDoc.data();
 
           // First, check the logical date overlap (Overlap Theorem)
-          const datesOverlap = bData.startDate <= jobData.endDate;
+          // Using .toMillis() ensures safe mathematical
+          // comparison of Firebase Timestamps
+          const datesOverlap =
+            (bData.startDate?.toMillis() ?? 0) <=
+            (jobData.endDate?.toMillis() ?? 0);
 
           if (datesOverlap) {
             // If dates overlap, dive into the hours

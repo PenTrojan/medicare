@@ -72,7 +72,14 @@ export interface IJob {
   workingTimes: Record<string, string[]>;
   maxDailyRate: number;
   preferredGender: "male" | "female" | "unspecified";
-  status: "pending" | "matching" | "no_matches" | "assigned" | "completed";
+  status:
+    "pending"
+  | "matching"
+  | "no_matches"
+  | "assigned"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
   assignedAssistantId?: string;
   topMatches: AssistantMatch[];
   createdAt?: Timestamp;
@@ -106,7 +113,13 @@ export interface IBill {
   escrowSummary: {
     totalRequiredFromSeeker: number;
     currentEscrowBalance: number;
-    financialStatus: "GENERATED" | "ESCROW_HELD" | "RELEASED" | "REFUNDED";
+    financialStatus:
+      "GENERATED"
+    | "ESCROW_HELD"
+    | "RELEASED"
+    | "REFUNDED"
+    | "PARTIALLY_REFUNDED";
+    returnedToSeeker?: number; // Added to track early cancellation splits
   };
   createdAt?: Timestamp;
   updatedAt?: Timestamp;

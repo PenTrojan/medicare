@@ -52,13 +52,95 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
     }
   }
 
+  Future<void> _showCancelConfirmationDialog() async {
+    // Determine the warning text based on the exact job status
+    final bool isStarted = widget.job.status == JobStatus.in_progress;
+    final String title = isStarted
+        ? "Cancel Active Job?"
+        : "Cancel Scheduled Job?";
+    final String content = isStarted
+        ? "This job has already started. Your refund will be pro-rated based on the hours the assistant has already worked. Are you sure you want to terminate this contract?"
+        : "This job hasn't started yet. You will receive a full refund of your escrow balance. Are you sure you want to cancel?";
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title, style: const TextStyle(color: Colors.red)),
+          content: Text(content),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Go Back"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Confirm Cancellation"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _executeCancellation();
+    }
+  }
+
+  Future<void> _executeCancellation() async {
+    // Show a loading overlay so the user can't double-tap
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('cancelJobEarly')
+          .call({'jobId': widget.job.id});
+
+      if (!mounted) return;
+      Navigator.pop(context); // Remove loading indicator
+
+      if (result.data['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Contract cancelled and escrow partitioned."),
+          ),
+        );
+        // Pop the screen to return to the dashboard, forcing a fresh database read
+        Navigator.pop(context);
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Remove loading indicator
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to cancel: ${e.message}")));
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Remove loading indicator
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("An error occurred: $e")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // A seeker opening this page directly from their list dashboard should see billing
     // ONLY if an assistant has actually been assigned to it.
     final bool canShowBilling =
         widget.job.status == JobStatus.assigned ||
+        widget.job.status == JobStatus.in_progress ||
         widget.job.status == JobStatus.completed;
+
+    // Flag to check if cancellation is allowed
+    final bool canCancel =
+        widget.job.status == JobStatus.assigned ||
+        widget.job.status == JobStatus.in_progress;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -70,20 +152,43 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
           SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment
+                  .stretch, // Changed to stretch for full-width buttons
               children: [
                 JobSpecsView(job: widget.job, showBilling: canShowBilling),
                 const SizedBox(height: 32),
-                const Text(
-                  "Top Matched Assistants",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1E3A8A),
+
+                // Conditionally show Matches OR the Cancel Button
+                if (widget.job.status == JobStatus.pending ||
+                    widget.job.status == JobStatus.matching) ...[
+                  const Text(
+                    "Top Matched Assistants",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E3A8A),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                _buildMatchesSection(),
+                  const SizedBox(height: 12),
+                  _buildMatchesSection(),
+                ] else if (canCancel) ...[
+                  // THE NEW CANCEL BUTTON
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.cancel_outlined),
+                    label: const Text("Terminate Contract Early"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: _showCancelConfirmationDialog,
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ],
             ),
           ),
