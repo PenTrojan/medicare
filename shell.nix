@@ -61,6 +61,6 @@ in
 
     export FLUTTER_ROOT="$MOCK_FLUTTER"
 
-    echo "⚡ Welcome ravenousbyte. FHS Flutter dev environment is active! ⚡"
+    echo "⚡ Welcome. FHS Flutter dev environment is active! ⚡"
   '';
 }).env
