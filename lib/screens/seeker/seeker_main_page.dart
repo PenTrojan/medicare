@@ -18,8 +18,8 @@ class SeekerMain extends StatelessWidget {
     return MainNavigationLayout(
       items: [
         NavigationItemConfig(
-          icon: Icons.search,
-          label: 'Find',
+          icon: Icons.home_rounded,
+          label: 'Home',
           // Matches the dynamic layout shell pattern used in AssistantMain
           pageBuilder: (goToTab) => SeekerDash(
             onTabRequested: (mainTab, innerTab) => goToTab(mainTab, innerTab),

@@ -82,7 +82,7 @@ export const getPublicAssistantProfile = onRequest(
         experienceLevel: data.experienceLevel || "unspecified",
         bio: data.bio || "No bio available.",
         experienceDescription:
-          data.experienceDescription || "No experience details provided.",
+          data.experience || "No experience details provided.",
       };
 
       res.status(200).json(profile);

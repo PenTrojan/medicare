@@ -71,7 +71,7 @@ class ProfilePage extends StatelessWidget {
                   ),
                   child: Divider(height: 40),
                 ),
-                _buildLogoutButton(context),
+                _buildAccountActionButton(context, appUser),
 
                 // CRITICAL: Floating Bar Cushion Buffer
                 const SizedBox(height: 100),
@@ -685,28 +685,50 @@ class ProfilePage extends StatelessWidget {
     }
   }
 
-  Widget _buildLogoutButton(BuildContext context) {
+  Widget _buildAccountActionButton(BuildContext context, AppUser appUser) {
+    final bool isGuest = appUser is Seeker && appUser.isGuest;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: OutlinedButton.icon(
-        onPressed: () async {
-          await FirebaseAuth.instance.signOut();
-          if (context.mounted) {
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          }
-        },
-        icon: const Icon(Icons.logout_rounded),
-        label: const Text("Sign Out of Account"),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.red,
-          side: BorderSide(color: Colors.red.shade200),
-          minimumSize: const Size(double.infinity, 50),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-      ),
+      child: isGuest
+          ? ElevatedButton.icon(
+              onPressed: () async {
+                // Signs out the temporary anonymous session and kicks back to the login interface
+                await FirebaseAuth.instance.signOut();
+                if (context.mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              },
+              icon: const Icon(Icons.login_rounded),
+              label: const Text("Sign In / Register"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            )
+          : OutlinedButton.icon(
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                if (context.mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              },
+              icon: const Icon(Icons.logout_rounded),
+              label: const Text("Sign Out of Account"),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: BorderSide(color: Colors.red.shade200),
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
     );
   }
 }
-
