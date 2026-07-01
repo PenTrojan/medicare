@@ -88,20 +88,24 @@ class SeekerJobsPage extends StatelessWidget {
             ],
           ),
         ),
-        body: const TabBarView(
-          children: [
-            AddJobPage(),
-            SeekerJobDetailsPage(
-              filterStatuses: [
-                JobStatus.pending,
-                JobStatus.matching,
-                JobStatus.no_matches,
-              ],
-            ),
-            SeekerJobDetailsPage(
-              filterStatuses: [JobStatus.assigned, JobStatus.in_progress],
-            ),
-          ],
+        body: SafeArea(
+          bottom:
+              true, // Ensures it leaves room above the bottom navigation bar
+          child: const TabBarView(
+            children: [
+              AddJobPage(),
+              SeekerJobDetailsPage(
+                filterStatuses: [
+                  JobStatus.pending,
+                  JobStatus.matching,
+                  JobStatus.no_matches,
+                ],
+              ),
+              SeekerJobDetailsPage(
+                filterStatuses: [JobStatus.assigned, JobStatus.in_progress],
+              ),
+            ],
+          ),
         ),
       ),
     );
