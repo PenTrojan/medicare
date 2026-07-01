@@ -44,12 +44,15 @@ class AuthGate extends StatelessWidget {
             },
 
             headerBuilder: (context, constraints, shrinkOffset) {
-              return const Padding(
-                padding: EdgeInsets.all(20),
-                child: Icon(
-                  Icons.medical_services,
-                  size: 60,
-                  color: Colors.blue,
+              return Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Image.asset(
+                    'assets/icons/app_icon.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               );
             },
