@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../widgets/assistant_profile_ui.dart';
+import '../shared/chat_detail_screen.dart';
 
 class SeekerFindListView extends StatefulWidget {
   // Added callback to pass tab updates back up to the dashboard shell
@@ -112,7 +115,7 @@ class _SeekerFindListViewState extends State<SeekerFindListView> {
     }
   }
 
-  void _showProfileModal(Map<String, dynamic> fullProfileData) {
+  void _showProfileModal(Map<String, dynamic> fullProfileData) async {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -120,18 +123,70 @@ class _SeekerFindListViewState extends State<SeekerFindListView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
-      builder: (_) => Padding(
+      builder: (sheetContext) => Padding(
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
           child: AssistantProfileUI(
             profile: fullProfileData,
-            // Pass the action logic down dynamically to the presenter view
-            onMessageTap: () {
-              Navigator.of(context).pop(); // Dismiss bottom sheet overlay
+            onMessageTap: () async {
+              // 1. Instantly pop the sheet using the sheet's specific context instance
+              Navigator.of(sheetContext).pop();
 
-              // Transition to message tab viewport (index 3) and provide target ID
-              final String assistantId = fullProfileData['id'] ?? '';
-              widget.onTabRequested?.call(3, int.tryParse(assistantId));
+              final String currentSeekerId =
+                  FirebaseAuth.instance.currentUser?.uid ?? "";
+              final String targetAssistantId =
+                  fullProfileData['id'] ?? fullProfileData['assistantId'] ?? "";
+              final String targetAssistantName =
+                  fullProfileData['name'] ?? "Assistant";
+
+              if (currentSeekerId.isEmpty || targetAssistantId.isEmpty) {
+                _showSnackBar("Cannot initialize chat: Missing User IDs");
+                return;
+              }
+
+              final String deterministicRoomId =
+                  "${currentSeekerId}_$targetAssistantId";
+              final roomDoc = FirebaseFirestore.instance
+                  .collection('chat_rooms')
+                  .doc(deterministicRoomId);
+
+              try {
+                final docSnapshot = await roomDoc.get();
+
+                if (!docSnapshot.exists) {
+                  // Fetch the seeker's name from their profile doc to write the channel metadata properly
+                  final seekerSnap = await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(currentSeekerId)
+                      .get();
+                  final String seekerName =
+                      seekerSnap.data()?['name'] ?? "User Seeker";
+
+                  await roomDoc.set({
+                    'seekerId': currentSeekerId,
+                    'assistantId': targetAssistantId,
+                    'seekerName': seekerName,
+                    'assistantName': targetAssistantName,
+                    'lastMessage': 'Conversation initialized',
+                    'lastMessageTime': FieldValue.serverTimestamp(),
+                  });
+                }
+
+                // 2. CRITICAL: Validate widget mounting status before pushing navigation routes asynchronously
+                if (!mounted) return;
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatDetailScreen(
+                      roomId: deterministicRoomId,
+                      targetName: targetAssistantName,
+                    ),
+                  ),
+                );
+              } catch (e) {
+                _showSnackBar("Error initializing conversation: $e");
+              }
             },
           ),
         ),
@@ -262,4 +317,3 @@ class _SeekerFindListViewState extends State<SeekerFindListView> {
     );
   }
 }
-

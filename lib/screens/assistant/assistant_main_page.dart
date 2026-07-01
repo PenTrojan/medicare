@@ -34,7 +34,7 @@ class AssistantMain extends StatelessWidget {
         NavigationItemConfig(
           icon: Icons.chat,
           label: 'Messages',
-          pageBuilder: (goToTab) => const MessagingPage(),
+          pageBuilder: (goToTab) => const MessagingPage(isSeeker: false),
         ),
         NavigationItemConfig(
           icon: Icons.account_circle,
@@ -45,4 +45,3 @@ class AssistantMain extends StatelessWidget {
     );
   }
 }
-

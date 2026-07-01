@@ -38,7 +38,7 @@ class SeekerMain extends StatelessWidget {
         NavigationItemConfig(
           icon: Icons.message,
           label: 'Chat',
-          pageBuilder: (goToTab) => const MessagingPage(),
+          pageBuilder: (goToTab) => const MessagingPage(isSeeker: true),
         ),
         NavigationItemConfig(
           icon: Icons.person,
