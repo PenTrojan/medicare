@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'add_job_page.dart';
 import 'seeker_job_list_stream_view.dart';
 import '../../models/job.dart';
+import '../../themes/app_colors.dart';
 
 class SeekerJobsPage extends StatelessWidget {
   const SeekerJobsPage({super.key});
@@ -112,33 +113,78 @@ class SeekerJobsPage extends StatelessWidget {
   }
 
   Widget _buildGuestOverlay(BuildContext context) {
-    return Container(
-      color: const Color(0xFFF1F5F9),
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.lock_outline, size: 100, color: Color(0xFF1E3A8A)),
-          const SizedBox(height: 24),
-          const Text(
-            "Sign In Required",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        title: const Text(
+          "Job Workspace",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Styled Background Circle Context for Icon Presentation
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_person_outlined,
+                  size: 80,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                "Sign In Required",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textMain,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Please register or authenticate with an authorized Seeker profile "
+                "to post standard or recurring care assignments.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                onPressed: () => _handleGuestRedirect(context),
+                icon: const Icon(Icons.login_rounded),
+                label: const Text(
+                  "Sign In / Register",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 52),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          const Text(
-            "Please sign in with a Seeker account to post and manage jobs.",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.blueGrey),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () => _handleGuestRedirect(context),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-            ),
-            child: const Text("Sign In / Register"),
-          ),
-        ],
+        ),
       ),
     );
   }

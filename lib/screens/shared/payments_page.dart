@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/job.dart';
-import '../../widgets/job_list_view.dart'; // Reuse your clean list layout!
+import '../../widgets/job_list_view.dart'; // Reuse clean list layout!
+import '../../themes/app_colors.dart';
 import 'billing_details_page.dart';
 
 class PaymentsPage extends StatelessWidget {
   final bool isSeeker;
 
   const PaymentsPage({super.key, required this.isSeeker});
+
+  Future<void> _handleGuestRedirect(BuildContext context) async {
+    await FirebaseAuth.instance.signOut();
+    if (context.mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
 
   void _showHistory(BuildContext context, String uid) {
     showModalBottomSheet(
@@ -30,7 +38,7 @@ class PaymentsPage extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A8A),
+                  color: AppColors.textMain,
                 ),
               ),
             ),
@@ -49,37 +57,35 @@ class PaymentsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text("Please sign in to view balances.")),
-      );
+    if (user == null || user.isAnonymous) {
+      return _buildGuestOverlay(context);
     }
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: const Color(0xFFF5F7FA),
         appBar: AppBar(
           backgroundColor: Colors.white,
-          elevation: 0.5,
+          elevation: 0,
           title: Text(
             isSeeker ? "Payment Center" : "Earnings Dashboard",
             style: const TextStyle(
-              color: Color(0xFF1E3A8A),
+              color: AppColors.textMain,
               fontWeight: FontWeight.bold,
             ),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.history, color: Color(0xFF1E3A8A)),
+              icon: const Icon(Icons.history, color: AppColors.textSecondary),
               onPressed: () => _showHistory(context, user.uid),
               tooltip: "View Financial History",
             ),
           ],
           bottom: TabBar(
-            labelColor: const Color(0xFF3B82F6),
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: const Color(0xFF3B82F6),
+            labelColor: AppColors.primary,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorColor: AppColors.primary,
             tabs: isSeeker
                 ? const [
                     Tab(
@@ -134,6 +140,82 @@ class PaymentsPage extends StatelessWidget {
     );
   }
 
+  Widget _buildGuestOverlay(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FA),
+      appBar: AppBar(
+        title: Text(
+          isSeeker ? "Payment Center" : "Earnings Dashboard",
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_outlined,
+                  size: 80,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                "Sign In Required",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textMain,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "Please authenticate your account to look up ongoing escrow balances, "
+                "settle active care invoices, or track compiled processing payout histories.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                onPressed: () => _handleGuestRedirect(context),
+                icon: const Icon(Icons.login_rounded),
+                label: const Text(
+                  "Sign In / Register",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 52),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBillingListStream({
     required String uid,
     required List<String> targetStatuses,
@@ -148,8 +230,9 @@ class PaymentsPage extends StatelessWidget {
           .where('escrowSummary.financialStatus', whereIn: targetStatuses)
           .snapshots(),
       builder: (context, snapshot) {
-        if (snapshot.hasError)
+        if (snapshot.hasError) {
           return Center(child: Text("Error: ${snapshot.error}"));
+        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -188,23 +271,30 @@ class PaymentsPage extends StatelessWidget {
               ),
               child: ListTile(
                 contentPadding: const EdgeInsets.all(16),
-                leading: const CircleAvatar(
-                  backgroundColor: Color(0xFFEFF6FF),
-                  child: Icon(Icons.receipt_long, color: Color(0xFF3B82F6)),
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.primary.withOpacity(0.08),
+                  child: const Icon(
+                    Icons.receipt_long,
+                    color: AppColors.primary,
+                  ),
                 ),
                 title: Text(
                   "Arrangement Ledger ID: ${cleanJobId.substring(0, 6).toUpperCase()}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textMain,
+                  ),
                 ),
                 subtitle: Text(
                   "Duration: ${pricing['totalDays']} Days • Click to examine",
+                  style: const TextStyle(color: AppColors.textSecondary),
                 ),
                 trailing: Text(
                   "Rs. ${displayAmount.toStringAsFixed(0)}",
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: Color(0xFF1E3A8A),
+                    color: AppColors.textMain,
                   ),
                 ),
                 onTap: () {
