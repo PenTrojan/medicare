@@ -4,7 +4,10 @@ import 'package:http/http.dart' as http;
 import '../../widgets/assistant_profile_ui.dart';
 
 class SeekerFindListView extends StatefulWidget {
-  const SeekerFindListView({super.key});
+  // Added callback to pass tab updates back up to the dashboard shell
+  final Function(int mainTab, int? innerTab)? onTabRequested;
+
+  const SeekerFindListView({super.key, this.onTabRequested});
 
   @override
   State<SeekerFindListView> createState() => _SeekerFindListViewState();
@@ -120,7 +123,17 @@ class _SeekerFindListViewState extends State<SeekerFindListView> {
       builder: (_) => Padding(
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
-          child: AssistantProfileUI(profile: fullProfileData),
+          child: AssistantProfileUI(
+            profile: fullProfileData,
+            // Pass the action logic down dynamically to the presenter view
+            onMessageTap: () {
+              Navigator.of(context).pop(); // Dismiss bottom sheet overlay
+
+              // Transition to message tab viewport (index 3) and provide target ID
+              final String assistantId = fullProfileData['id'] ?? '';
+              widget.onTabRequested?.call(3, int.tryParse(assistantId));
+            },
+          ),
         ),
       ),
     );
