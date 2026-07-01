@@ -29,6 +29,7 @@ class Assistant extends AppUser {
 
   bool _isVerified = false;
   bool _isBooked = false;
+  bool _isAvailable = true;
 
   // constructor
   Assistant({
@@ -103,6 +104,7 @@ class Assistant extends AppUser {
     );
     assistant._isVerified = data['isVerified'] ?? false;
     assistant._isBooked = data['isBooked'] ?? false;
+    assistant._isAvailable = data['isAvailable'] ?? true;
     assistant.isSuspended = data['isSuspended'] ?? false;
 
     // safely casting as a map of lists
@@ -139,6 +141,7 @@ class Assistant extends AppUser {
   List<String> get proofDocumentsUrls => _proofDocumentsUrls;
   bool get isVerified => _isVerified;
   bool get isBooked => _isBooked;
+  bool get isAvailable => _isAvailable;
 
   // update details inside the object locally (before uploading to the firestore)
   void updateRegistrationDetails({
@@ -158,6 +161,7 @@ class Assistant extends AppUser {
     required int dailyRate,
     required ExperienceLevel experienceLevel,
     required String? profilePicUrl,
+    required bool isAvailable,
     GeoPoint? location,
   }) {
     this.displayName = displayName;
@@ -176,6 +180,7 @@ class Assistant extends AppUser {
     _dailyRate = dailyRate;
     _experienceLevel = experienceLevel;
     _profilePicUrl = profilePicUrl;
+    _isAvailable = isAvailable;
     _location = location;
   }
 
@@ -200,6 +205,7 @@ class Assistant extends AppUser {
       'experienceLevel': _experienceLevel.name,
       'isVerified': _isVerified,
       'isBooked': _isBooked,
+      'isAvailable': _isAvailable,
       'isSuspended': isSuspended,
       'experience': _experienceDescription,
       'address': _address,

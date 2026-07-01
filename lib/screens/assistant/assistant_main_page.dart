@@ -1,62 +1,48 @@
 import 'package:flutter/material.dart';
-
-// Seeker-specific pages
+import '../../widgets/main_navigation_layout.dart';
 import 'assistant_dashboard.dart';
 import 'assistant_jobs_page.dart';
-//import '_page.dart';
-
-// shared pages
+import '../shared/payments_page.dart';
 import '../shared/messaging_page.dart';
 import '../shared/profile_page.dart';
-import '../shared/payments_page.dart';
 
-class AssistantMain extends StatefulWidget {
+class AssistantMain extends StatelessWidget {
   const AssistantMain({super.key});
 
   @override
-  State<AssistantMain> createState() => _AssistantMainState();
-}
-
-class _AssistantMainState extends State<AssistantMain> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    const AssistantDash(),
-    const AssistantJobsPage(), // Tab 2: The jobs
-    const PaymentsPage(isSeeker: false),
-    const MessagingPage(), // Tab 3: Communication
-    const ProfilePage(), // Tab 4: Self-management
-  ];
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.medical_services),
-            label: 'Home',
+    return MainNavigationLayout(
+      items: [
+        NavigationItemConfig(
+          icon: Icons.home_rounded,
+          label: 'Home',
+          // Receives the public callback function directly from the parent layout shell
+          pageBuilder: (goToTab) => AssistantDash(
+            onTabRequested: (mainTab, innerTab) => goToTab(mainTab, innerTab),
           ),
-
-          BottomNavigationBarItem(
-            icon: Icon(Icons.medical_services),
-            label: 'Jobs',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.payments_outlined),
-            label: "Earnings",
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Messages'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Profile',
-          ),
-        ],
-      ),
+        ),
+        NavigationItemConfig(
+          icon: Icons.assignment_outlined,
+          label: 'Jobs',
+          pageBuilder: (goToTab) => const AssistantJobsPage(),
+        ),
+        NavigationItemConfig(
+          icon: Icons.payments_outlined,
+          label: 'Earnings',
+          pageBuilder: (goToTab) => const PaymentsPage(isSeeker: false),
+        ),
+        NavigationItemConfig(
+          icon: Icons.chat,
+          label: 'Messages',
+          pageBuilder: (goToTab) => const MessagingPage(),
+        ),
+        NavigationItemConfig(
+          icon: Icons.account_circle,
+          label: 'Profile',
+          pageBuilder: (goToTab) => const ProfilePage(),
+        ),
+      ],
     );
   }
 }
+

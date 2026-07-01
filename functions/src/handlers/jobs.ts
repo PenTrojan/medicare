@@ -35,6 +35,7 @@ export const matchJobToAssistants = onDocumentCreated(
         .collection("users")
         .where("role", "==", "assistant")
         .where("isVerified", "==", true)
+        .where("isAvailable", "==", true)
         .get();
 
       const distanceMap = new Map<string, number>();

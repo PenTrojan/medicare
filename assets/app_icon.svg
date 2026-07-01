@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#00C4CC" />
+      <stop offset="40%" stop-color="#0072CE" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="30%" stop-color="#A5C2D5" />
+      <stop offset="50%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#5B84A1" />
+      <stop offset="100%" stop-color="#2D4A61" />
+    </linearGradient>
+
+    <radialGradient id="sphereGlow" cx="50%" cy="30%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.0" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.4" />
+    </radialGradient>
+
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.35" />
+    </filter>
+
+    <linearGradient id="emblemGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="256" cy="256" r="220" fill="url(#metalGrad)" filter="url(#dropShadow)" />
+  
+  <circle cx="256" cy="256" r="206" fill="#1E293B" stop-opacity="0.8" />
+
+  <circle cx="256" cy="256" r="202" fill="url(#bgGrad)" />
+
+  <circle cx="256" cy="256" r="202" fill="url(#sphereGlow)" />
+
+  <path d="M256 120 
+           C295 120 355 132 355 132 
+           C355 220 330 310 256 380 
+           C182 310 157 220 157 132 
+           C157 132 217 120 256 120 Z" 
+        fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="10" stroke-linejoin="round" />
+
+  <g filter="url(#dropShadow)">
+    <path d="M 134 268 
+             L 194 268 
+             L 214 200
+             L 242 350
+             L 268 150
+             L 294 300
+             L 312 254" 
+          fill="none" stroke="url(#emblemGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <path d="M 326 242 L 354 212" fill="none" stroke="url(#emblemGrad)" stroke-width="20" stroke-linecap="round" />
+    <circle cx="366" cy="200" r="15" fill="none" stroke="url(#emblemGrad)" stroke-width="16" />
+    
+    <path d="M 326 280 L 354 310" fill="none" stroke="url(#emblemGrad)" stroke-width="20" stroke-linecap="round" />
+    <circle cx="366" cy="322" r="15" fill="none" stroke="url(#emblemGrad)" stroke-width="16" />
+  </g>
+</svg>

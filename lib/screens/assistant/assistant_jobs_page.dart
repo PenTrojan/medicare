@@ -7,7 +7,8 @@ import '../shared/job_details_page.dart'; // Holds AssistantJobPage
 import 'invitations_page.dart';
 
 class AssistantJobsPage extends StatelessWidget {
-  const AssistantJobsPage({super.key});
+  final int initialTabIndex;
+  const AssistantJobsPage({super.key, this.initialTabIndex = 0});
 
   void _showHistory(BuildContext context, String uid) {
     showModalBottomSheet(
@@ -56,6 +57,7 @@ class AssistantJobsPage extends StatelessWidget {
 
     return DefaultTabController(
       length: 2,
+      initialIndex: initialTabIndex,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,

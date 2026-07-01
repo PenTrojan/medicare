@@ -255,6 +255,7 @@ class _AssistantRegState extends State<AssistantReg> {
         experienceLevel: _selectedExpLevel,
         profilePicUrl: _profilePicUrl,
         location: _currentLocation,
+        isAvailable: assistant.isAvailable,
       );
 
       await assistant.saveToFirestore();

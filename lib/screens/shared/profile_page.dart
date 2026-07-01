@@ -9,6 +9,7 @@ import 'package:medicare/models/assistant.dart';
 import 'package:medicare/models/seeker.dart';
 import 'package:medicare/services/auth_service.dart';
 import 'package:medicare/services/image_upload_service.dart';
+import 'package:medicare/themes/app_colors.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -16,8 +17,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    
-    // Safety check if user session is lost
+
     if (user == null) {
       return const Scaffold(body: Center(child: Text("Not logged in")));
     }
@@ -40,28 +40,41 @@ class ProfilePage extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text("My Profile"), 
+            title: const Text(
+              "My Profile",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             elevation: 0,
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
+            foregroundColor: AppColors.textMain,
           ),
           body: SingleChildScrollView(
             child: Column(
               children: [
-                const SizedBox(height: 20),
-                
+                const SizedBox(height: 10),
+
                 // Profile Picture & Name Header
                 _buildProfileHeader(appUser, user.uid, context),
-                
-                const SizedBox(height: 20),
 
-                // Logic to show different UI based on the User Class
-                if (appUser is Assistant) _buildAssistantDetails(appUser, user.uid, context),
-                if (appUser is Seeker) _buildSeekerDetails(appUser),
+                const SizedBox(height: 24),
 
-                const Padding(padding: EdgeInsets.all(20.0), child: Divider()),
+                // Conditional Layout Rendering for Specific Roles
+                if (appUser is Assistant)
+                  _buildAssistantDetails(appUser, user.uid, context),
+                if (appUser is Seeker)
+                  _buildSeekerDetails(appUser, user.uid, context),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 24.0,
+                    vertical: 12.0,
+                  ),
+                  child: Divider(height: 40),
+                ),
                 _buildLogoutButton(context),
-                const SizedBox(height: 30),
+
+                // CRITICAL: Floating Bar Cushion Buffer
+                const SizedBox(height: 100),
               ],
             ),
           ),
@@ -71,231 +84,459 @@ class ProfilePage extends StatelessWidget {
   }
 
   // --- Header with Profile Picture & Name ---
-  Widget _buildProfileHeader(AppUser appUser, String uid, BuildContext context) {
+  Widget _buildProfileHeader(
+    AppUser appUser,
+    String uid,
+    BuildContext context,
+  ) {
     bool isGuest = appUser is Seeker && appUser.isGuest;
-    
-    // Get profile pic url if available
-    String? profilePicUrl;
-    if (appUser is Assistant) {
-      profilePicUrl = appUser.profilePicUrl;
-    } else if (appUser is Seeker) {
-      profilePicUrl = (appUser as dynamic).profilePicUrl; 
-    }
+    String? profilePicUrl = appUser is Assistant ? appUser.profilePicUrl : null;
 
     return Column(
       children: [
         Stack(
           alignment: Alignment.bottomRight,
           children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.blue[100],
-              backgroundImage: profilePicUrl != null ? NetworkImage(profilePicUrl) : null,
-              child: profilePicUrl == null 
-                  ? const Icon(Icons.person, size: 80, color: Colors.blue) 
-                  : null,
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 56,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundImage: profilePicUrl != null
+                    ? NetworkImage(profilePicUrl)
+                    : null,
+                child: profilePicUrl == null
+                    ? const Icon(
+                        Icons.person,
+                        size: 70,
+                        color: AppColors.primary,
+                      )
+                    : null,
+              ),
             ),
-            // Edit button for everyone EXCEPT guests
             if (!isGuest)
               Positioned(
                 bottom: 0,
-                right: 0,
+                right: 4,
                 child: GestureDetector(
                   onTap: () => _updateProfilePicture(context, uid),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: const BoxDecoration(
-                      color: Colors.blue,
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 15),
-        
-        // Display Name
+        const SizedBox(height: 16),
         Text(
-          isGuest ? "Guest User" : (appUser.displayName ?? "Unknown User"),
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          isGuest ? "Guest User" : (appUser.displayName ?? "User"),
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textMain,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          appUser is Assistant
+              ? "Medical Assistant Account"
+              : "Care Seeker Account",
+          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
       ],
     );
   }
 
-  // --- Assistant Specific UI ---
-  Widget _buildAssistantDetails(Assistant assistant, String uid, BuildContext context) {
-    String formattedWorkingTimes = "Not set";
+  // --- Assistant Specific UI (Clean, split list layout) ---
+  Widget _buildAssistantDetails(
+    Assistant assistant,
+    String uid,
+    BuildContext context,
+  ) {
+    String formattedWorkingTimes = "Not configured";
     if (assistant.workingTimes.isNotEmpty) {
       formattedWorkingTimes = assistant.workingTimes.entries
           .map((e) => "${e.key}: ${e.value.join(' - ')}")
           .join('\n');
     }
 
-    String ratingDisplay = "Not rated yet";
-    try {
-       ratingDisplay = (assistant as dynamic).rating != null ? "${(assistant as dynamic).rating} / 5.0" : "Not rated yet";
-    } catch(e) {
-       // Fallback
-    }
-
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Non-editable fields
-          _infoCard(Icons.badge, "NIC Number", assistant.nic ?? "Not Provided"),
+          _buildSectionTitle("Identity Verification (Static)"),
+          _infoCard(
+            Icons.badge_outlined,
+            "NIC Number",
+            assistant.nic ?? "Not Provided",
+          ),
           _infoCard(Icons.wc, "Gender", assistant.gender.name.toUpperCase()),
-          _infoCard(Icons.star, "Rating", ratingDisplay), 
 
-          const SizedBox(height: 10),
-          const Divider(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
+          _buildSectionTitle("Professional Management (Editable)"),
 
-          // Editable fields
           _editableInfoCard(
-            icon: Icons.cake,
+            icon: Icons.cake_outlined,
             label: "Age",
-            value: assistant.age != null ? "${assistant.age} years" : "Not Provided",
-            onEdit: () => _showEditDialog(context, "Age", assistant.age?.toString() ?? "", "age", uid, isNumber: true),
+            value: assistant.age != null && assistant.age! > 0
+                ? "${assistant.age} years"
+                : "Not Provided",
+            onEdit: () => _showEditDialog(
+              context,
+              "Age",
+              assistant.age?.toString() ?? "",
+              "age",
+              uid,
+              isLucyNum: true,
+            ),
           ),
-
           _editableInfoCard(
-            icon: Icons.location_on,
-            label: "Location",
+            icon: Icons.location_on_outlined,
+            label: "Residential Address",
             value: assistant.address ?? "Not Provided",
-            onEdit: () => _showEditDialog(context, "Location", assistant.address ?? "", "address", uid),
+            onEdit: () => _showEditDialog(
+              context,
+              "Residential Address",
+              assistant.address ?? "",
+              "address",
+              uid,
+            ),
           ),
-
           _editableInfoCard(
-            icon: Icons.payments,
-            label: "Daily Rate",
-            value: assistant.dailyRate != null ? "Rs. ${assistant.dailyRate}" : "Not Provided",
-            onEdit: () => _showEditDialog(context, "Daily Rate", assistant.dailyRate?.toString() ?? "", "dailyRate", uid, isNumber: true),
+            icon: Icons.payments_outlined,
+            label: "Daily Service Rate",
+            value: assistant.dailyRate != null && assistant.dailyRate! > 0
+                ? "LKR ${assistant.dailyRate}"
+                : "Not Provided",
+            onEdit: () => _showEditDialog(
+              context,
+              "Daily Service Rate",
+              assistant.dailyRate?.toString() ?? "",
+              "dailyRate",
+              uid,
+              isLucyNum: true,
+            ),
           ),
-
           _editableInfoCard(
-            icon: Icons.work,
+            icon: Icons.notes_outlined,
             label: "Professional Bio",
-            value: assistant.bio != null && assistant.bio!.isNotEmpty 
-                ? assistant.bio! 
+            value: assistant.bio != null && assistant.bio!.isNotEmpty
+                ? assistant.bio!
                 : "Not Provided",
-            onEdit: () => _showEditDialog(context, "Professional Bio", assistant.bio ?? "", "bio", uid, isMultiline: true),
+            onEdit: () => _showEditDialog(
+              context,
+              "Professional Bio",
+              assistant.bio ?? "",
+              "bio",
+              uid,
+              isMultiline: true,
+            ),
           ),
-
           _editableInfoCard(
-            icon: Icons.history_edu,
-            label: "Work Experience",
-            value: assistant.experienceDescription != null && assistant.experienceDescription!.isNotEmpty 
-                ? assistant.experienceDescription! 
+            icon: Icons.history_edu_outlined,
+            label: "Work Experience Description",
+            value:
+                assistant.experienceDescription != null &&
+                    assistant.experienceDescription!.isNotEmpty
+                ? assistant.experienceDescription!
                 : "Not Provided",
-            onEdit: () => _showEditDialog(context, "Work Experience", assistant.experienceDescription ?? "", "experienceDescription", uid, isMultiline: true),
+            onEdit: () => _showEditDialog(
+              context,
+              "Work Experience Description",
+              assistant.experienceDescription ?? "",
+              "experienceDescription",
+              uid,
+              isMultiline: true,
+            ),
           ),
-
           _editableInfoCard(
-            icon: Icons.access_time,
-            label: "Working Days & Hours",
+            icon: Icons.access_time_outlined,
+            label: "Working Availability Profile",
             value: formattedWorkingTimes,
             onEdit: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Please go to Settings -> Schedule to edit working hours.")),
+                const SnackBar(
+                  content: Text(
+                    "Please modify hours via Registration settings context.",
+                  ),
+                ),
               );
             },
           ),
 
-          // Skills Section (Editable)
-          Card(
-            elevation: 0,
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey[200]!),
-            ),
-            child: InkWell(
-              onTap: () => _showEditSkillsDialog(context, assistant.skills, uid),
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.star_border, color: Colors.blue),
-                            const SizedBox(width: 16),
-                            const Text(
-                              "Skills",
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        const Icon(Icons.edit, color: Colors.blue, size: 20),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: assistant.skills.isEmpty
-                          ? [const Text("No skills listed", style: TextStyle(fontSize: 16))]
-                          : assistant.skills
-                              .map((skill) => Chip(
-                                    label: Text(skill),
-                                    backgroundColor: Colors.blue[50],
-                                  ))
-                              .toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          const SizedBox(height: 12),
+          _buildSkillsCard(context, assistant.skills, uid),
         ],
       ),
     );
   }
 
-  // --- Seeker Specific UI ---
-  Widget _buildSeekerDetails(Seeker seeker) {
+  // --- Seeker Specific UI (Clean form fields alignment) ---
+  Widget _buildSeekerDetails(Seeker seeker, String uid, BuildContext context) {
     if (seeker.isGuest) {
-      return const SizedBox.shrink(); 
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Text(
+          "You are browsing as a guest. Register a Seeker account to save information.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.textSecondary.withOpacity(0.7),
+            fontSize: 14,
+          ),
+        ),
+      );
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildSectionTitle("Account Information"),
           _infoCard(
-            Icons.email,
-            "Email Address",
-            seeker.email ?? "Not provided",
+            Icons.email_outlined,
+            "Registered Email",
+            seeker.email ?? "Not configured",
+          ),
+          _editableInfoCard(
+            icon: Icons.person_outline,
+            label: "Profile Display Name",
+            value: seeker.displayName ?? "Not configured",
+            onEdit: () => _showEditDialog(
+              context,
+              "Display Name",
+              seeker.displayName ?? "",
+              "name",
+              uid,
+            ),
           ),
         ],
       ),
     );
   }
 
-  // --- Generic Edit Logic via Dialogs ---
-  Future<void> _showEditDialog(BuildContext context, String title, String initialValue, String dbField, String uid, {bool isNumber = false, bool isMultiline = false}) async {
-    TextEditingController controller = TextEditingController(text: initialValue);
+  // --- Subcomponents & Shared Utilities ---
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: AppColors.primary,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkillsCard(
+    BuildContext context,
+    List<String> skills,
+    String uid,
+  ) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      child: InkWell(
+        onTap: () => _showEditSkillsDialog(context, skills, uid),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(
+                        Icons.local_hospital_outlined,
+                        color: AppColors.primary,
+                        size: 22,
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        "Registered Medical Skills",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textMain,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: skills.isEmpty
+                    ? [
+                        const Text(
+                          "No skills declared",
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ]
+                    : skills
+                          .map(
+                            (skill) => Chip(
+                              label: Text(
+                                skill,
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              backgroundColor: AppColors.primary.withOpacity(
+                                0.08,
+                              ),
+                              side: BorderSide.none,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          )
+                          .toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoCard(IconData icon, String label, String value) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade100),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: AppColors.textSecondary.withOpacity(0.7)),
+        title: Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
+        subtitle: Text(
+          value,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textMain,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _editableInfoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onEdit,
+  }) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.primary.withOpacity(0.15)),
+      ),
+      child: ListTile(
+        onTap: onEdit,
+        leading: Icon(icon, color: AppColors.primary),
+        title: Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
+        subtitle: Text(
+          value,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textMain,
+          ),
+        ),
+        trailing: const Icon(
+          Icons.edit_note,
+          color: AppColors.primary,
+          size: 22,
+        ),
+      ),
+    );
+  }
+
+  // --- Dialog Business Logic Execution ---
+  Future<void> _showEditDialog(
+    BuildContext context,
+    String title,
+    String initialValue,
+    String dbField,
+    String uid, {
+    bool isLucyNum = false,
+    bool isMultiline = false,
+  }) async {
+    TextEditingController controller = TextEditingController(
+      text: initialValue,
+    );
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Edit $title"),
+          title: Text(
+            "Edit $title",
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           content: TextField(
             controller: controller,
-            keyboardType: isNumber ? TextInputType.number : (isMultiline ? TextInputType.multiline : TextInputType.text),
+            keyboardType: isLucyNum
+                ? TextInputType.number
+                : (isMultiline ? TextInputType.multiline : TextInputType.text),
             maxLines: isMultiline ? 3 : 1,
             decoration: InputDecoration(
-              hintText: "Enter your $title",
-              border: const OutlineInputBorder(),
+              hintText: "Update entry details...",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           actions: [
@@ -306,27 +547,27 @@ class ProfilePage extends StatelessWidget {
             ElevatedButton(
               onPressed: () async {
                 dynamic valueToSave = controller.text.trim();
-                
-                if (isNumber) {
-                  valueToSave = int.tryParse(valueToSave) ?? 0;
-                }
+                if (isLucyNum) valueToSave = int.tryParse(valueToSave) ?? 0;
 
                 try {
-                  // IMPORTANT: Ensure 'users' matches your Firestore collection name!
-                  await FirebaseFirestore.instance.collection('users').doc(uid).update({
-                    dbField: valueToSave,
-                  });
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(uid)
+                      .update({dbField: valueToSave});
                   if (context.mounted) {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Updated successfully!")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Profile sync complete!")),
+                    );
                   }
                 } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to update: $e")));
-                  }
+                  if (context.mounted)
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text("Error: $e")));
                 }
               },
-              child: const Text("Save"),
+              child: const Text("Save Changes"),
             ),
           ],
         );
@@ -334,21 +575,32 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Future<void> _showEditSkillsDialog(BuildContext context, List<String> currentSkills, String uid) async {
-    TextEditingController controller = TextEditingController(text: currentSkills.join(", "));
+  Future<void> _showEditSkillsDialog(
+    BuildContext context,
+    List<String> currentSkills,
+    String uid,
+  ) async {
+    TextEditingController controller = TextEditingController(
+      text: currentSkills.join(", "),
+    );
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Edit Skills"),
+          title: const Text(
+            "Edit Specializations",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           content: TextField(
             controller: controller,
             maxLines: 2,
-            decoration: const InputDecoration(
-              hintText: "e.g. CPR, First Aid",
-              helperText: "Separate multiple skills with commas",
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: "e.g., CPR, Wound Dressing, Elderly Care",
+              helperText: "Separate multiple values with a comma",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
           actions: [
@@ -363,20 +615,22 @@ class ProfilePage extends StatelessWidget {
                     .map((s) => s.trim())
                     .where((s) => s.isNotEmpty)
                     .toList();
-
                 try {
-                  // IMPORTANT: Ensure 'users' matches your Firestore collection name!
-                  await FirebaseFirestore.instance.collection('users').doc(uid).update({
-                    'skills': newSkills,
-                  });
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(uid)
+                      .update({'skills': newSkills});
                   if (context.mounted) {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Skills updated!")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Skills list refreshed!")),
+                    );
                   }
                 } catch (e) {
-                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to update: $e")));
-                  }
+                  if (context.mounted)
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text("Error: $e")));
                 }
               },
               child: const Text("Save"),
@@ -387,7 +641,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // --- Profile Picture Update Logic ---
   Future<void> _updateProfilePicture(BuildContext context, String uid) async {
     final ImagePicker picker = ImagePicker();
     final ImageUploadService uploadService = ImageUploadService();
@@ -397,14 +650,13 @@ class ProfilePage extends StatelessWidget {
       imageQuality: 50,
       maxWidth: 400,
     );
-
     if (pickedFile == null) return;
 
     if (context.mounted) {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (_) => const Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -414,97 +666,43 @@ class ProfilePage extends StatelessWidget {
         imageFile: File(pickedFile.path),
         category: 'profile_pics',
       );
-
-      // IMPORTANT: Ensure 'users' matches your Firestore collection name!
       await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'profilePicUrl': url,
       });
-
       if (context.mounted) {
-        Navigator.pop(context); // Close dialog
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile picture updated!")));
+        Navigator.pop(context); // Pop loading screen
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Avatar update complete!")),
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        Navigator.pop(context); // Close dialog
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Upload Error: $e")));
+        Navigator.pop(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Upload failed: $e")));
       }
     }
   }
 
-  // --- Reusable Static Info Card ---
-  Widget _infoCard(IconData icon, String label, String value) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.blueGrey),
-        title: Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        subtitle: Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-      ),
-    );
-  }
-
-  // --- Reusable Editable Info Card ---
-  Widget _editableInfoCard({
-    required IconData icon, 
-    required String label, 
-    required String value, 
-    required VoidCallback onEdit
-  }) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.blue[100]!), 
-      ),
-      child: ListTile(
-        onTap: onEdit, // <-- Makes the ENTIRE CARD clickable
-        leading: Icon(icon, color: Colors.blue),
-        title: Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        subtitle: Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        trailing: const Icon(Icons.edit, color: Colors.blue, size: 20),
-      ),
-    );
-  }
-
-  // --- Logout Button ---
   Widget _buildLogoutButton(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ElevatedButton.icon(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: OutlinedButton.icon(
         onPressed: () async {
           await FirebaseAuth.instance.signOut();
           if (context.mounted) {
             Navigator.of(context).popUntil((route) => route.isFirst);
           }
         },
-        icon: const Icon(Icons.logout),
-        label: const Text("Log Out"),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red[50],
+        icon: const Icon(Icons.logout_rounded),
+        label: const Text("Sign Out of Account"),
+        style: OutlinedButton.styleFrom(
           foregroundColor: Colors.red,
-          elevation: 0,
+          side: BorderSide(color: Colors.red.shade200),
           minimumSize: const Size(double.infinity, 50),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
       ),
