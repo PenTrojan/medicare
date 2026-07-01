@@ -227,7 +227,56 @@ class _AssistantRegState extends State<AssistantReg> {
   }
 
   Future<void> _saveProfile(Assistant assistant) async {
-    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+
+    final isValid = _formKey.currentState!.validate();
+
+    if (!isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fix the errors before saving")),
+      );
+      return;
+    }
+
+    // Extra manual validation
+
+    final nic = _nicController.text.trim().toUpperCase();
+
+    final oldNic = RegExp(r'^\d{9}[VX]$');
+    final newNic = RegExp(r'^\d{12}$');
+
+    if (!oldNic.hasMatch(nic) && !newNic.hasMatch(nic)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Invalid NIC Number")));
+      return;
+    }
+
+    final age = int.tryParse(_ageController.text.trim());
+
+    if (age == null || age < 18 || age > 80) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Age must be between 18 - 80")),
+      );
+      return;
+    }
+
+    final rate = int.tryParse(_rateController.text.trim());
+
+    if (rate == null || rate <= 0 || rate > 10000) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Invalid daily rate")));
+      return;
+    }
+
+    if (_skills.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select at least one skill")),
+      );
+      return;
+    }
+
     if (_nicImageUrl == null) {
       ScaffoldMessenger.of(
         context,
@@ -236,40 +285,58 @@ class _AssistantRegState extends State<AssistantReg> {
     }
 
     setState(() => _isSaving = true);
+
     try {
       assistant.updateRegistrationDetails(
         displayName: _nameController.text.trim(),
-        nic: _nicController.text.trim(),
+        nic: nic,
         nicImageUrl: _nicImageUrl,
         address: _addressController.text.trim(),
         bio: _bioController.text.trim(),
         experienceDescription: _experienceController.text.trim(),
+
         skills: _skills,
+
         workingTimes: _generateWorkingTimesMap(),
+
         proofText: [],
+
         proofImageUrls: _proofImageUrls,
+
         registrationComplete: true,
+
         gender: _selectedGender,
-        age: int.tryParse(_ageController.text) ?? 0,
-        dailyRate: int.tryParse(_rateController.text) ?? 0,
+
+        age: age,
+
+        dailyRate: rate,
+
         experienceLevel: _selectedExpLevel,
+
         profilePicUrl: _profilePicUrl,
+
         location: _currentLocation,
+
         isAvailable: assistant.isAvailable,
       );
 
       await assistant.saveToFirestore();
-      if (mounted)
+
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text("Profile Updated!")));
+        ).showSnackBar(const SnackBar(content: Text("Profile Updated")));
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
     }
   }
 
@@ -345,12 +412,20 @@ class _AssistantRegState extends State<AssistantReg> {
                   "NIC Number",
                   Icons.badge_outlined,
                   textCapitalization: TextCapitalization.characters,
-                  customValidator: (v) {
-                    final nicRegex = RegExp(r'^(\d{9}V|\d{12})$');
-                    if (v == null || v.isEmpty)
-                      return 'Please enter a valid Sri Lankan NIC';
-                    if (!nicRegex.hasMatch(v.trim()))
-                      return 'Please enter a valid Sri Lankan NIC';
+                  customValidator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'NIC number is required';
+                    }
+
+                    final nic = value.trim().toUpperCase();
+
+                    final oldNic = RegExp(r'^\d{9}[VX]$');
+                    final newNic = RegExp(r'^\d{12}$');
+
+                    if (!oldNic.hasMatch(nic) && !newNic.hasMatch(nic)) {
+                      return 'Invalid Sri Lankan NIC';
+                    }
+
                     return null;
                   },
                 ),
@@ -382,6 +457,23 @@ class _AssistantRegState extends State<AssistantReg> {
                         "Age",
                         Icons.cake,
                         isNumber: true,
+                        customValidator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Age is required";
+                          }
+
+                          final age = int.tryParse(value);
+
+                          if (age == null) {
+                            return "Enter a valid age";
+                          }
+
+                          if (age < 18 || age > 80) {
+                            return "18 to 80";
+                          }
+
+                          return null;
+                        },
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -391,6 +483,26 @@ class _AssistantRegState extends State<AssistantReg> {
                         "Daily Rate (Rs)",
                         Icons.payments,
                         isNumber: true,
+                        customValidator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Daily rate is required";
+                          }
+
+                          final rate = int.tryParse(value);
+
+                          if (rate == null) {
+                            return "Enter a valid amount";
+                          }
+
+                          if (rate <= 0) {
+                            return "Rate must be greater than 0";
+                          }
+                          if (rate > 10000) {
+                            return "max 10000";
+                          }
+
+                          return null;
+                        },
                       ),
                     ),
                   ],
@@ -452,19 +564,35 @@ class _AssistantRegState extends State<AssistantReg> {
                   "Residential Address",
                   Icons.home_outlined,
                 ),
+                const Text(
+                  "Do You Have Any Eductional/Training Qualifications?",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 8),
+
                 _buildTextField(
                   _bioController,
                   "Professional Bio",
                   Icons.notes,
                   maxLines: 3,
                 ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "Have You Worked Anywhere Before?",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 8),
+
                 _buildTextField(
                   _experienceController,
                   "Experience Description",
                   Icons.history_edu,
                   maxLines: 3,
                 ),
-
                 const SizedBox(height: 10),
                 SkillSelector(
                   selectedSkills: _skills,
@@ -545,6 +673,7 @@ class _AssistantRegState extends State<AssistantReg> {
         maxLines: maxLines,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         textCapitalization: textCapitalization,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon),
