@@ -3,63 +3,49 @@
 //====================================
 
 import 'package:flutter/material.dart';
-
-// Seeker-specific pages
+import '../../widgets/main_navigation_layout.dart';
 import 'seeker_dashboard.dart';
 import 'seeker_jobs_page.dart';
-
-// shared pages
+import '../shared/payments_page.dart';
 import '../shared/messaging_page.dart';
 import '../shared/profile_page.dart';
-import '../shared/payments_page.dart';
 
-class SeekerMain extends StatefulWidget {
+class SeekerMain extends StatelessWidget {
   const SeekerMain({super.key});
 
   @override
-  State<SeekerMain> createState() => _SeekerMainState();
-}
-
-class _SeekerMainState extends State<SeekerMain> {
-  int _selectedIndex = 0; // manages which page is the current page
-
-  // Available Pages
-  final List<Widget> _pages = [
-    const SeekerDash(),
-    const SeekerJobsPage(),
-    const PaymentsPage(isSeeker: true),
-    const MessagingPage(),
-    const ProfilePage(),
-  ];
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      /** * IndexedStack ensures that if a user is halfway through filling the 
-       * 'Create Job' form in SeekerJobsPage and switches to 'Chat', 
-       * their form data isn't lost when they switch back.
-       */
-      body: IndexedStack(index: _selectedIndex, children: _pages),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Find'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment_outlined),
-            label: 'Jobs',
+    return MainNavigationLayout(
+      items: [
+        NavigationItemConfig(
+          icon: Icons.home_rounded,
+          label: 'Home',
+          // Matches the dynamic layout shell pattern used in AssistantMain
+          pageBuilder: (goToTab) => SeekerDash(
+            onTabRequested: (mainTab, innerTab) => goToTab(mainTab, innerTab),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.payments_outlined),
-            label: "Payments",
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Chat'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-      ),
+        ),
+        NavigationItemConfig(
+          icon: Icons.assignment_outlined,
+          label: 'Jobs',
+          pageBuilder: (goToTab) => const SeekerJobsPage(),
+        ),
+        NavigationItemConfig(
+          icon: Icons.payments_outlined,
+          label: 'Payments',
+          pageBuilder: (goToTab) => const PaymentsPage(isSeeker: true),
+        ),
+        NavigationItemConfig(
+          icon: Icons.message,
+          label: 'Chat',
+          pageBuilder: (goToTab) => const MessagingPage(),
+        ),
+        NavigationItemConfig(
+          icon: Icons.person,
+          label: 'Profile',
+          pageBuilder: (goToTab) => const ProfilePage(),
+        ),
+      ],
     );
   }
 }

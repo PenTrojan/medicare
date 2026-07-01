@@ -9,8 +9,13 @@ import 'package:flutter/material.dart';
 
 class AssistantProfileUI extends StatelessWidget {
   final Map<String, dynamic> profile;
+  final VoidCallback? onMessageTap;
 
-  const AssistantProfileUI({super.key, required this.profile});
+  const AssistantProfileUI({
+    super.key,
+    required this.profile,
+    this.onMessageTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -164,6 +169,24 @@ class AssistantProfileUI extends StatelessWidget {
             }).toList(),
           ),
         ),
+
+        // 6. Messaging Action Call-To-Action Button
+        if (onMessageTap != null) ...[
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onMessageTap,
+            icon: const Icon(Icons.chat_bubble_outline),
+            label: const Text("Message Assistant"),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 50),
+              backgroundColor: const Color(0xFF1E3A8A),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -6,6 +6,8 @@ admin.initializeApp();
 // Export functions from handlers
 export {matchJobToAssistants} from "./handlers/jobs";
 export {getAssistantPublicProfile} from "./handlers/profiles";
+export {getPublicAssistants} from "./handlers/getPublicAssistants";
+export {getPublicAssistantProfile} from "./handlers/getAssistantSearch";
 export {dailyJobLifecycleCron} from "./handlers/jobLifecycle";
 export {cancelJobEarly} from "./billing/cancelJobEarly";
 
