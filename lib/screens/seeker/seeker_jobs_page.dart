@@ -6,7 +6,9 @@ import '../../models/job.dart';
 import '../../themes/app_colors.dart';
 
 class SeekerJobsPage extends StatelessWidget {
-  const SeekerJobsPage({super.key});
+  final int initialTabIndex;
+
+  const SeekerJobsPage({super.key, this.initialTabIndex = 0});
 
   Future<void> _handleGuestRedirect(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
@@ -60,6 +62,7 @@ class SeekerJobsPage extends StatelessWidget {
 
     return DefaultTabController(
       length: 3,
+      initialIndex: initialTabIndex,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
