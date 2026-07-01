@@ -131,8 +131,7 @@ medicare/
 
 1. **Clone the repository:**
 ```bash
-git clone [https://github.com/penTrojan/medicare.git](https://github.com/penTrojan/medicare.git)
-
+git clone https://github.com/penTrojan/medicare.git
 ```
 
 
@@ -144,7 +143,6 @@ git clone [https://github.com/penTrojan/medicare.git](https://github.com/penTroj
 ```bash
 cd functions
 npm install
-
 ```
 
 
