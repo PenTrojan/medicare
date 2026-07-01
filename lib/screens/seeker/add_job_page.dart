@@ -119,13 +119,24 @@ class _AddJobPageState extends State<AddJobPage> {
   }
 
   Future<void> _submitJob() async {
-    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+
+    final isValid = _formKey.currentState!.validate();
+
+    if (!isValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fix the errors before posting")),
+      );
+      return; // <-- මෙතනින් save නවතිනවා
+    }
+
     if (_jobLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please set the job location")),
       );
       return;
     }
+
     if (_selectedDateRange == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a date range")),
@@ -134,6 +145,7 @@ class _AddJobPageState extends State<AddJobPage> {
     }
 
     final workingTimes = _generateWorkingTimesMap();
+
     if (workingTimes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select required working hours")),
@@ -145,21 +157,35 @@ class _AddJobPageState extends State<AddJobPage> {
 
     try {
       final user = FirebaseAuth.instance.currentUser;
+
       final newJob = Job(
         id: '',
         seekerId: user!.uid,
+
         patientName: _nameController.text.trim(),
+
         patientAge: int.parse(_ageController.text.trim()),
+
         patientCondition: _conditionController.text.trim(),
+
         address: _addressController.text.trim(),
+
         location: _jobLocation!,
+
         requiredSkills: _selectedSkills,
+
         startDate: _selectedDateRange!.start,
+
         endDate: _selectedDateRange!.end,
+
         workingTimes: workingTimes,
+
         maxDailyRate: int.parse(_maxRateController.text.trim()),
+
         preferredGender: _preferredGender,
+
         createdAt: DateTime.now(),
+
         status: JobStatus.pending,
       );
 
@@ -167,17 +193,16 @@ class _AddJobPageState extends State<AddJobPage> {
 
       if (!mounted) return;
 
-      // Success snackbar since we are staying on the dashboard
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Job posted! Check the Pending tab for matches."),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Job posted!")));
 
-      // Navigate user to the "Pending" tab automatically
+      // Go to Pending tab
       DefaultTabController.of(context).animateTo(1);
 
+      // clear form
       _formKey.currentState!.reset();
+
       setState(() {
         _selectedDateRange = null;
         _jobLocation = null;
@@ -186,9 +211,11 @@ class _AddJobPageState extends State<AddJobPage> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Failed to save: $e")));
+      ).showSnackBar(SnackBar(content: Text("Failed: $e")));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -208,6 +235,23 @@ class _AddJobPageState extends State<AddJobPage> {
                   "Age",
                   Icons.cake,
                   isNumber: true,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Age is required";
+                    }
+
+                    final age = int.tryParse(value.trim());
+
+                    if (age == null) {
+                      return "Enter valid age";
+                    }
+
+                    if (age < 1 || age > 120) {
+                      return "Age must be between 1 - 120";
+                    }
+
+                    return null;
+                  },
                 ),
                 _buildTextField(_addressController, "Full Address", Icons.home),
                 _buildTextField(
@@ -243,6 +287,27 @@ class _AddJobPageState extends State<AddJobPage> {
                   "Max Daily Budget (Rs)",
                   Icons.payments,
                   isNumber: true,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return "Budget is required";
+                    }
+
+                    final rate = int.tryParse(value.trim());
+
+                    if (rate == null) {
+                      return "Enter valid amount";
+                    }
+
+                    if (rate <= 0) {
+                      return "Budget must be greater than 0";
+                    }
+
+                    if (rate > 100000) {
+                      return "Maximum budget is Rs 100000";
+                    }
+
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 10),
                 SkillSelector(
@@ -363,6 +428,7 @@ class _AddJobPageState extends State<AddJobPage> {
     IconData icon, {
     int maxLines = 1,
     bool isNumber = false,
+    String? Function(String?)? validator,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -370,12 +436,16 @@ class _AddJobPageState extends State<AddJobPage> {
         controller: controller,
         maxLines: maxLines,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+
         decoration: InputDecoration(
           labelText: label,
           prefixIcon: Icon(icon, color: const Color(0xFF3B82F6)),
           border: const OutlineInputBorder(),
         ),
-        validator: (v) => v!.isEmpty ? "Required" : null,
+
+        validator: validator ?? (v) => v!.isEmpty ? "Required" : null,
       ),
     );
   }
