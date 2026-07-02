@@ -5,8 +5,11 @@ import '../../models/seeker.dart';
 import '../../models/admin.dart';
 import '../../services/dummy_data_service.dart';
 import '../../services/admin_dashboard_service.dart';
+import '../../widgets/main_navigation_layout.dart';
 import 'assistants_page.dart';
+import 'admin_skills_page.dart';
 import 'seekers_page.dart';
+import '../shared/profile_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -32,8 +35,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     try {
       final verifiedAssistants =
           await AdminDashboardService.getVerifiedAssistantsCount();
-      final activeSeekers =
-          await AdminDashboardService.getActiveSeekersCount();
+      final activeSeekers = await AdminDashboardService.getActiveSeekersCount();
       final pendingVerifications =
           await AdminDashboardService.getPendingVerificationsCount();
       final activeJobs = await AdminDashboardService.getActiveJobsCount();
@@ -59,6 +61,39 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    return MainNavigationLayout(
+      initialIndex: 0,
+      items: [
+        NavigationItemConfig(
+          icon: Icons.dashboard,
+          label: 'Dashboard',
+          pageBuilder: (goToTab) => _buildDashboardScaffold(context),
+        ),
+        NavigationItemConfig(
+          icon: Icons.medical_services,
+          label: 'Assistants',
+          pageBuilder: (goToTab) => const AssistantsPage(),
+        ),
+        NavigationItemConfig(
+          icon: Icons.people,
+          label: 'Seekers',
+          pageBuilder: (goToTab) => const SeekersPage(),
+        ),
+        NavigationItemConfig(
+          icon: Icons.psychology,
+          label: 'Skills',
+          pageBuilder: (goToTab) => const AdminSkillsPage(),
+        ),
+        NavigationItemConfig(
+          icon: Icons.person,
+          label: 'Profile',
+          pageBuilder: (goToTab) => const ProfilePage(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
@@ -105,8 +140,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const AssistantsPage(),
+                                builder: (context) => const AssistantsPage(),
                               ),
                             );
                           },
@@ -123,8 +157,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const SeekersPage(),
+                                builder: (context) => const SeekersPage(),
                               ),
                             );
                           },
@@ -154,8 +187,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const AssistantsPage(),
+                                builder: (context) => const AssistantsPage(),
                               ),
                             );
                           },
@@ -294,4 +326,3 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 }
-
