@@ -122,10 +122,23 @@ class AssistantJobsPage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
         final jobs = snapshot.data!.docs
-            .map((doc) => Job.fromFirestore(doc))
+            .map((doc) {
+              try {
+                return Job.fromFirestore(doc);
+              } catch (e) {
+                // Catch the fleeting map parsing error quietly in the background
+                debugPrint("Fleeting matching state skipped: $e");
+                return null;
+              }
+            })
+            .whereType<
+              Job
+            >() // Filters out any null instances from parsing glitches
             .toList();
-
         return JobListView(
           jobs: jobs,
           onJobTap: (job) {

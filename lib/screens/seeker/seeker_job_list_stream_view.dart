@@ -33,6 +33,10 @@ class SeekerJobDetailsPage extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
 
+        if (!snapshot.hasData || snapshot.data == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         // Convert the Firestore documents into Job model list
         final jobs = snapshot.data!.docs
             .map((doc) => Job.fromFirestore(doc))

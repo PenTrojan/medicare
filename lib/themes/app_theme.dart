@@ -31,5 +31,12 @@ class AppTheme {
         fontWeight: FontWeight.bold,
       ),
     ),
+    snackBarTheme: const SnackBarThemeData(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      contentTextStyle: TextStyle(color: Colors.transparent, fontSize: 0),
+      insetPadding: EdgeInsets.zero,
+      behavior: SnackBarBehavior.floating,
+    ),
   );
 }

@@ -130,19 +130,6 @@ class AssistantDash extends StatelessWidget {
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.file_present),
-              label: const Text("View Submitted Documents"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -288,6 +275,19 @@ class AssistantDash extends StatelessWidget {
           .limit(3)
           .snapshots(),
       builder: (context, snapshot) {
+        // 1. Add this error check first!
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "Error loading schedules: ${snapshot.error}",
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+          );
+        }
+        // 2. This will now only handle the actual loading state
         if (!snapshot.hasData) {
           return const Center(
             child: Padding(
@@ -296,7 +296,6 @@ class AssistantDash extends StatelessWidget {
             ),
           );
         }
-
         final bookings = snapshot.data!.docs;
         if (bookings.isEmpty) {
           return Card(

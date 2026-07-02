@@ -77,7 +77,9 @@ class Job implements FirestoreObject {
       patientAge: data['patientAge'] ?? 0,
       patientCondition: data['patientCondition'] ?? '',
       address: data['address'] ?? '',
-      location: data['location'] as GeoPoint,
+      location: data['location'] != null
+          ? data['location'] as GeoPoint
+          : const GeoPoint(0.0, 0.0),
       requiredSkills: List<String>.from(data['requiredSkills'] ?? []),
 
       startDate: (data['startDate'] as Timestamp?)?.toDate() ?? DateTime.now(),

@@ -92,10 +92,7 @@ class PaymentsPage extends StatelessWidget {
                       text: "Action Required",
                       icon: Icon(Icons.payment_outlined),
                     ),
-                    Tab(
-                      text: "In Escrow",
-                      icon: Icon(Icons.lock_clock_outlined),
-                    ),
+                    Tab(text: "Held", icon: Icon(Icons.lock_clock_outlined)),
                   ]
                 : const [
                     Tab(

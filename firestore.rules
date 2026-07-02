@@ -31,6 +31,21 @@ service cloud.firestore {
       // Seekers can read Assistant profiles
       allow read: if request.auth != null && 
                   get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'seeker';
+
+      // Rules for the 'bookings' subcollection
+      match /bookings/{bookingId} {
+        // Allows the specific user to read and listen to their scheduled shifts
+        allow read: if request.auth != null && request.auth.uid == userId;
+        // Adjust write permissions based on your backend logic (e.g., if Cloud Functions handle it, leave as false)
+        allow write: if false; 
+      }
+
+      // Rules for the 'invitations' subcollection
+      match /invitations/{invitationId} {
+        // Allows the specific user to check their personal pending dashboard offers
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     // 2. Rules for the Metadata Collection
