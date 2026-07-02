@@ -10,7 +10,11 @@ class AdminSkillsPage extends StatefulWidget {
 }
 
 class _AdminSkillsPageState extends State<AdminSkillsPage> {
-  void _showEditDialog(BuildContext context, String oldSkill, SkillManager manager) {
+  void _showEditDialog(
+    BuildContext context,
+    String oldSkill,
+    SkillManager manager,
+  ) {
     final controller = TextEditingController(text: oldSkill);
     showDialog(
       context: context,
@@ -72,7 +76,11 @@ class _AdminSkillsPageState extends State<AdminSkillsPage> {
     );
   }
 
-  void _showDeleteDialog(BuildContext context, String skill, SkillManager manager) {
+  void _showDeleteDialog(
+    BuildContext context,
+    String skill,
+    SkillManager manager,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -99,9 +107,60 @@ class _AdminSkillsPageState extends State<AdminSkillsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage Skills')),
+      appBar: AppBar(
+        title: const Text('Manage Skills'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Skill',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('metadata')
+                      .doc('skills')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || !snapshot.data!.exists) {
+                      return const SizedBox.shrink();
+                    }
+                    final skillManager = SkillManager.fromFirestore(
+                      snapshot.data!,
+                    );
+                    return AlertDialog(
+                      title: const Text('Add Skill'),
+                      content: TextField(
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Skill Name',
+                        ),
+                        onSubmitted: (value) async {
+                          if (value.trim().isNotEmpty) {
+                            await skillManager.addSkill(value.trim());
+                            Navigator.pop(dialogContext);
+                          }
+                        },
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Cancel'),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance.collection('metadata').doc('skills').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('metadata')
+            .doc('skills')
+            .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -112,6 +171,7 @@ class _AdminSkillsPageState extends State<AdminSkillsPage> {
           final skillManager = SkillManager.fromFirestore(snapshot.data!);
           final skills = skillManager.availableSkills;
           return ListView.builder(
+            padding: const EdgeInsets.only(bottom: 88),
             itemCount: skills.length,
             itemBuilder: (context, index) {
               final skill = skills[index];
@@ -124,12 +184,14 @@ class _AdminSkillsPageState extends State<AdminSkillsPage> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit),
-                        onPressed: () => _showEditDialog(context, skill, skillManager),
+                        onPressed: () =>
+                            _showEditDialog(context, skill, skillManager),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete),
                         color: Colors.red,
-                        onPressed: () => _showDeleteDialog(context, skill, skillManager),
+                        onPressed: () =>
+                            _showDeleteDialog(context, skill, skillManager),
                       ),
                     ],
                   ),
@@ -138,45 +200,6 @@ class _AdminSkillsPageState extends State<AdminSkillsPage> {
             },
           );
         },
-      ),
-      floatingActionButton: Builder(
-        builder: (context) => FloatingActionButton(
-          onPressed: () {
-            final snapshot = ScaffoldMessenger.of(context);
-            showDialog(
-              context: context,
-              builder: (context) => StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance.collection('metadata').doc('skills').snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData || !snapshot.data!.exists) {
-                    return const SizedBox.shrink();
-                  }
-                  final skillManager = SkillManager.fromFirestore(snapshot.data!);
-                  return AlertDialog(
-                    title: const Text('Add Skill'),
-                    content: TextField(
-                      autofocus: true,
-                      decoration: const InputDecoration(labelText: 'Skill Name'),
-                      onSubmitted: (value) async {
-                        if (value.trim().isNotEmpty) {
-                          await skillManager.addSkill(value.trim());
-                          Navigator.pop(context);
-                        }
-                      },
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel'),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            );
-          },
-          child: const Icon(Icons.add),
-        ),
       ),
     );
   }
