@@ -72,12 +72,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
         NavigationItemConfig(
           icon: Icons.medical_services,
           label: 'Assistants',
-          pageBuilder: (goToTab) => const AssistantsPage(),
+          pageBuilder: (goToTab) => AssistantsPage(
+            onDataChanged: _loadUserCounts,
+          ),
         ),
         NavigationItemConfig(
           icon: Icons.people,
           label: 'Seekers',
-          pageBuilder: (goToTab) => const SeekersPage(),
+          pageBuilder: (goToTab) => SeekersPage(
+            onDataChanged: _loadUserCounts,
+          ),
         ),
         NavigationItemConfig(
           icon: Icons.psychology,
@@ -140,7 +144,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const AssistantsPage(),
+                                builder: (context) => AssistantsPage(
+                                  initialTabIndex: 1,
+                                  onDataChanged: _loadUserCounts,
+                                ),
                               ),
                             );
                           },
@@ -157,7 +164,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const SeekersPage(),
+                                builder: (context) => SeekersPage(
+                                  onDataChanged: _loadUserCounts,
+                                ),
                               ),
                             );
                           },
@@ -187,7 +196,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const AssistantsPage(),
+                                builder: (context) => AssistantsPage(
+                                  onDataChanged: _loadUserCounts,
+                                ),
                               ),
                             );
                           },

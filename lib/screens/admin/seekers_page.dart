@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'local_paginated_list.dart';
 
 class SeekersPage extends StatelessWidget {
-  const SeekersPage({Key? key}) : super(key: key);
+  final VoidCallback? onDataChanged;
+
+  const SeekersPage({Key? key, this.onDataChanged}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +26,7 @@ class SeekersPage extends StatelessWidget {
           children: [
             LocalPaginatedList(
               userType: 'seeker',
+              onDataChanged: onDataChanged,
               stream: FirebaseFirestore.instance
                   .collection('users')
                   .where('role', isEqualTo: 'seeker')
@@ -32,6 +35,7 @@ class SeekersPage extends StatelessWidget {
             ),
             LocalPaginatedList(
               userType: 'seeker',
+              onDataChanged: onDataChanged,
               stream: FirebaseFirestore.instance
                   .collection('users')
                   .where('isSuspended', isEqualTo: true)

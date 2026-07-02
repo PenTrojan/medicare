@@ -8,11 +8,13 @@ import 'admin_seeker_profile.dart';
 class LocalPaginatedList extends StatefulWidget {
   final Stream<QuerySnapshot> stream;
   final String userType;
+  final VoidCallback? onDataChanged;
 
   const LocalPaginatedList({
     Key? key,
     required this.stream,
     required this.userType,
+    this.onDataChanged,
   }) : super(key: key);
 
   @override
@@ -50,19 +52,20 @@ class _LocalPaginatedListState extends State<LocalPaginatedList> {
     return null;
   }
 
-  void _openProfile(BuildContext context, String uid) {
+  Future<void> _openProfile(BuildContext context, String uid) async {
     if (widget.userType == 'assistant') {
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => AdminAssistantProfilePage(uid: uid)),
       );
-      return;
+    } else {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => AdminSeekerProfilePage(uid: uid)),
+      );
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => AdminSeekerProfilePage(uid: uid)),
-    );
+    widget.onDataChanged?.call();
   }
 
   Widget _buildLeadingAvatar(String? profileImageUrl) {

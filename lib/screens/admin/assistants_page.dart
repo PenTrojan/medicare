@@ -4,11 +4,21 @@ import 'package:flutter/material.dart';
 import 'local_paginated_list.dart';
 
 class AssistantsPage extends StatelessWidget {
-  const AssistantsPage({Key? key}) : super(key: key);
+  final int initialTabIndex;
+  final VoidCallback? onDataChanged;
+
+  const AssistantsPage({
+    Key? key,
+    this.initialTabIndex = 0,
+    this.onDataChanged,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final tabIndex = initialTabIndex.clamp(0, 2);
+
     return DefaultTabController(
+      initialIndex: tabIndex,
       length: 3,
       child: Scaffold(
         appBar: AppBar(
@@ -25,6 +35,7 @@ class AssistantsPage extends StatelessWidget {
           children: [
             LocalPaginatedList(
               userType: 'assistant',
+              onDataChanged: onDataChanged,
               stream: FirebaseFirestore.instance
                   .collection('users')
                   .where('role', isEqualTo: 'assistant')
@@ -34,6 +45,7 @@ class AssistantsPage extends StatelessWidget {
             ),
             LocalPaginatedList(
               userType: 'assistant',
+              onDataChanged: onDataChanged,
               stream: FirebaseFirestore.instance
                   .collection('users')
                   .where('role', isEqualTo: 'assistant')
@@ -43,6 +55,7 @@ class AssistantsPage extends StatelessWidget {
             ),
             LocalPaginatedList(
               userType: 'assistant',
+              onDataChanged: onDataChanged,
               stream: FirebaseFirestore.instance
                   .collection('users')
                   .where('isSuspended', isEqualTo: true)
