@@ -1,3 +1,5 @@
+<img src="assets/icon_lowres.png"/>
+
 # SmartMediLink (Project Medicare)
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
@@ -21,6 +23,13 @@ SmartMediLink solves this through a strict **Domain-Driven Design (DDD)** backen
 * **Immutable Financial Ledgers:** Strict tracking of platform fees, taxes, and pro-rata hourly splits if a contract is terminated early by either party.
 
 ---
+## 📸 App Preview
+
+| Seeker Dashboard | Assistant Matching | Escrow Billing |
+| :---: | :---: | :---: |
+| <img src="docs/assets/seeker_home.png" width="250"/> | <img src="docs/assets/matching.png" width="250"/> | <img src="docs/assets/billing.png" width="250"/> |
+
+---
 
 ## 🚀 Core Platform Features
 
@@ -40,6 +49,8 @@ SmartMediLink solves this through a strict **Domain-Driven Design (DDD)** backen
 ## 🏗️ System Architecture
 
 SmartMediLink is built on a strict separation of concerns, heavily utilizing Firebase Cloud Functions as a powerful backend orchestrator.
+
+👉 **[Click here to view the complete System Architecture & File Structure](docs/ARCHITECTURE.md)** 👈
 
 ### The Backend Engine (Node.js / TypeScript)
 The backend enforces a strict **1:1:1 Relationship** (`1 Job = 1 Assistant = 1 Financial Bill`). 
@@ -64,58 +75,6 @@ The backend enforces a strict **1:1:1 Relationship** (`1 Job = 1 Assistant = 1 F
 | **Authentication** | Firebase Auth | Secure identity verification & token validation |
 | **Storage Layer** | Firebase Cloud Storage | Upload management for profile assets & documentation proofs |
 | **Location Processing** | Geolocator / Google Maps API | Precise coordinates translation & custom gesture mapping |
-
----
-
-## 📦 Project Structure
-
-```text
-medicare/
-├── docs/                             # Project documentation and schema rules
-│   ├── ARCHITECTURE.md
-│   ├── firestoreRules.md
-│   └── registered_skills.md
-│
-├── functions/                        # Firebase Cloud Functions (Backend Engine)
-│   ├── src/
-│   │   ├── billing/                  # Escrow split logic & invoice generation
-│   │   ├── config/                   # Global backend configurations
-│   │   ├── core/                     # Pure Domain Entities (BillEntity, JobEntity)
-│   │   ├── handlers/                 # Lifecycle triggers and HTTP gateways
-│   │   ├── services/                 # Stateless utilities (MatchingEngine)
-│   │   └── index.ts                  # Exported Cloud Function entry points
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── lib/                              # Flutter Frontend Application
-│   ├── models/                       # Data transfer objects and schemas
-│   │   ├── app_user.dart
-│   │   ├── assistant.dart
-│   │   └── bill_model.dart
-│   │
-│   ├── screens/                      # Main UI views separated by user role
-│   │   ├── admin/                    # Admin dashboards, lists, and verification
-│   │   ├── assistant/                # Assistant workflows (Dashboard, Jobs, Invites)
-│   │   ├── seeker/                   # Seeker workflows (Posting, Matching, Dashboard)
-│   │   ├── shared/                   # Reusable screens (Billing, Details, Messages)
-│   │   ├── login.dart                # Authentication entry
-│   │   └── role_picker.dart          # Initial role routing
-│   │
-│   ├── services/                     # Firebase, Auth, and external API wrappers
-│   │
-│   ├── widgets/                      # Reusable UI components
-│   │   ├── availability_selector.dart
-│   │   ├── location_picker_sheet.dart
-│   │   └── skill_selector.dart
-│   │
-│   ├── firebase_options.dart         # Auto-generated Firebase initialization
-│   └── main.dart                     # Flutter application entry point
-│
-├── firestore.rules                   # Database security and access rules
-├── firestore.indexes.json            # Database composite index configurations
-├── pubspec.yaml                      # Flutter package dependencies
-└── shell.nix                         # Reproducible Nix development environment
-```
 
 ---
 
