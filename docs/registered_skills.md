@@ -1,4 +1,8 @@
-## These are the skills currently added to the database
+## Assistant skills currently added to the database
+
+### (Used as a starting point. Maybe subject to change later.)
+
+---
 
 Vital Signs Monitoring (BP, Pulse, Temp)
 

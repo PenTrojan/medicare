@@ -34,6 +34,7 @@ in
   ];
 
   profile = ''
+    export IN_FHS_CONTAINER=1
     export ANDROID_HOME="${androidSdk}/libexec/android-sdk"
     export ANDROID_SDK_ROOT="${androidSdk}/libexec/android-sdk"
     export JAVA_HOME="${pkgs.jdk17.home}"
