@@ -138,15 +138,24 @@ git clone https://github.com/penTrojan/medicare.git
 2. **Configure Firebase (Frontend):**
 * Run `flutterfire configure` to link the app to your Firebase project and automatically generate the necessary `google-services.json` and `GoogleService-Info.plist` files.
 
-
-3. **Configure Backend Functions:**
+3. **Configure Local Environment Keys (Maps API):**
+   The Google Maps SDK key is securely decoupled from the codebase to prevent exposure. Create or open the `local.properties` file inside your `android/` directory using your editor of choice:
+   ```bash
+   nvim android/local.properties
+   ```
+   Add your Google Maps API key to the bottom of the file:
+   ```
+     MAPS_API_KEY=AIzaSyYourActualKeyGoesHere
+   ```
+   Note: This file is included in `.gitignore` and will never be tracked by Git.
+   
+5. **Configure Backend Functions:**
 ```bash
 cd functions
 npm install
 ```
 
-
-4. **Deploy the Database Rules & Functions:**
+5. **Deploy the Database Rules & Functions:**
 ```bash
 firebase deploy --only firestore:rules
 firebase deploy --only functions
@@ -154,7 +163,7 @@ firebase deploy --only functions
 ```
 
 
-5. **Run the App:**
+6. **Run the App:**
 ```bash
 cd ..
 flutter run
