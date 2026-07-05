@@ -27,7 +27,7 @@ SmartMediLink solves this through a strict **Domain-Driven Design (DDD)** backen
 
 | Seeker Dashboard | Assistant Matching | Escrow Billing |
 | :---: | :---: | :---: |
-| <img src="docs/assets/seeker_home.png" width="250"/> | <img src="docs/assets/matching.png" width="250"/> | <img src="docs/assets/billing.png" width="250"/> |
+| <img src="docs/assets/screenshots/seeker_home.png" width="250"/> | <img src="docs/assets/screenshots/matching.png" width="250"/> | <img src="docs/assets/screenshots/billing.png" width="250"/> |
 
 ---
 
