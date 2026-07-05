@@ -135,24 +135,19 @@ flutter run
 
 ### ❄️ Advanced: Reproducible Development Environment (Nix)
 
-For developers on Linux (especially those utilizing declarative or immutable systems), this repository includes a fully sandboxed, reproducible development shell. Instead of polluting your global system packages, the included `shell.nix` spins up an isolated File Hierarchy Standard (FHS) environment containing the exact required toolchain.
-
-**Key Environment Features:**
-
-* **Dynamic Android Composition:** Automatically provisions the precise Android SDKs, NDKs (`28.2.13676358`), and Build Tools (`35.0.0`, `34.0.0`) required for compilation without manual Android Studio setup.
-* **Mutable Flutter Overlay:** Generates a dynamically linked, writable mock Flutter root (`.gradle_home/mock_flutter`) to seamlessly bypass Nix store read-only constraints, allowing standard Gradle build mutations.
-* **Full-Stack Tooling:** Pre-loads `nodejs_22`, `firebase-tools`, and `jdk17` so you can orchestrate the Firebase backend and Flutter frontend from a single terminal.
-
-#### Activating the Workspace
+For developers on Linux (On nixos or any other distro with nix package manager), this repository includes a fully sandboxed, reproducible development shell that automatically sets up all the dependencies.
 
 Ensure you have the Nix package manager installed, navigate to the project root, and execute:
 
 ```bash
 nix-shell
 ```
+If you need to tweak the toolchain versions, you can edit the `shell.nix` configuration file.
 
-If you need to tweak the toolchain versions to match your local setup, you can edit the configuration file directly:
+---
+### 🤝 Credits & Acknowledgments
 
-```bash
-nvim shell.nix
-```
+For demo user profile images [thispersondoesnotexist.com](https://thispersondoesnotexist.com/)
+
+
+
