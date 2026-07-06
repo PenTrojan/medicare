@@ -1,15 +1,17 @@
-<img src="assets/icon_lowres.png"/>
+<div  align="center">
+<img src="assets/icon_lowres.png" height="250"/>
 
-# SmartMediLink (Project Medicare)
+# Project Medicare
+</div>
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Functions%20%7C%20Firestore-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green?style=flat)](#)
+[![Platform](https://img.shields.io/badge/Platform-Android-green?style=flat)](#)
 [![Architecture](https://img.shields.io/badge/Architecture-Domain_Driven_Design-blueviolet?style=flat)](#)
 
-**SmartMediLink** (developed under the working title **Project Medicare**) is an advanced, automated medical assistant matching platform. Built using Flutter and backed by a serverless Firebase infrastructure, the platform cleanly connects patients (Seekers) with qualified medical assistants. 
+**Medicare** (AKA SmartMediLink) is an advanced, automated medical assistant matching platform. Built using Flutter and backed by a serverless Firebase infrastructure, the platform cleanly connects patients (Seekers) with qualified medical assistants. 
 
-Moving beyond basic job boards, SmartMediLink utilizes a custom matching engine and automated lifecycle orchestration to handle granular scheduling, geospatial routing, and complex pro-rata financial escrow splits hour-by-hour.
+Moving beyond basic job boards, Medicare utilizes a custom matching engine and automated lifecycle orchestration to handle granular scheduling, geospatial routing, and complex pro-rata financial escrow splits hour-by-hour.
 
 ---
 
@@ -17,8 +19,9 @@ Moving beyond basic job boards, SmartMediLink utilizes a custom matching engine 
 
 The core problem in the gig-economy healthcare sector is managing the strict constraints of medical requirements, precise hourly schedules, and fair financial distribution when life happens (e.g., sickness, cancellations, or delays).
 
-SmartMediLink solves this through a strict **Domain-Driven Design (DDD)** backend architecture. By isolating "Managers" (Cloud Functions) from "Brains" (Domain Entities), the system provides:
-* **Hyper-Precise Matching:** Assistants can stack back-to-back shifts on the same day. The engine uses Base-10 integer conversion and the Overlap Theorem to match availability down to the minute.
+Medicare solves this through a strict **Domain-Driven Design (DDD)** backend architecture. By isolating "Managers" (Cloud Functions) from "Brains" (Domain Entities), the system provides:
+* **Hyper-Precise Matching:** Assistants can stack back-to-back shifts on the same day. The engine uses Base-10 integer conversion (turn complex time data into a single, simple number) and the Overlap Theorem to match availability down to the minute.
+  
 * **Automated Lifecycles:** Nightly background CRON jobs seamlessly activate scheduled care contracts, close out completed ones, and release escrow funds without manual intervention.
 * **Immutable Financial Ledgers:** Strict tracking of platform fees, taxes, and pro-rata hourly splits if a contract is terminated early by either party.
 
@@ -48,11 +51,11 @@ SmartMediLink solves this through a strict **Domain-Driven Design (DDD)** backen
 
 ## 🏗️ System Architecture
 
-SmartMediLink is built on a strict separation of concerns, heavily utilizing Firebase Cloud Functions as a powerful backend orchestrator.
+Medicare is built on a strict separation of concerns, heavily utilizing Firebase Cloud Functions as a powerful backend orchestrator.
 
 👉 **[Click here to view the complete System Architecture & File Structure](docs/ARCHITECTURE.md)** 👈
 
-### The Backend Engine (Node.js / TypeScript)
+### The Backend Engine (TypeScript)
 The backend enforces a strict **1:1:1 Relationship** (`1 Job = 1 Assistant = 1 Financial Bill`). 
 * **Gateway Callable Functions:** Secure HTTPS endpoints (`acceptInvitation`, `cancelJobEarly`) that handle authentication, authorization, and database transactions.
 * **Domain Entities (`JobEntity`, `BillEntity`):** Pure, untainted business logic classes. These entities handle the complex math (like converting shift strings to billable days and calculating pro-rata splits) and return immutable objects to the orchestrators.
@@ -89,13 +92,13 @@ The backend enforces a strict **1:1:1 Relationship** (`1 Job = 1 Assistant = 1 F
 ### Standard Setup Instructions
 
 1. **Clone the repository:**
-```bash
-git clone https://github.com/penTrojan/medicare.git
-```
+   ```bash
+   git clone https://github.com/penTrojan/medicare.git
+   ```
 
 
 2. **Configure Firebase (Frontend):**
-* Run `flutterfire configure` to link the app to your Firebase project and automatically generate the necessary `google-services.json` and `GoogleService-Info.plist` files.
+   * Run `flutterfire configure` to link the app to your Firebase project and automatically generate the necessary `google-services.json` and `GoogleService-Info.plist` files.
 
 3. **Configure Local Environment Keys (Maps API):**
    The Google Maps SDK key is securely decoupled from the codebase to prevent exposure. Create or open the `local.properties` file inside your `android/` directory using your editor of choice:
@@ -109,27 +112,23 @@ git clone https://github.com/penTrojan/medicare.git
    Note: This file is included in `.gitignore` and will never be tracked by Git.
    
 5. **Configure Backend Functions:**
-```bash
-cd functions
-npm install
-```
+   ```bash
+   cd functions
+   npm install
+   ```
 
 5. **Deploy the Database Rules & Functions:**
-```bash
-firebase deploy --only firestore:rules
-firebase deploy --only functions
-
-```
+   ```bash
+   firebase deploy --only firestore:rules
+   firebase deploy --only functions
+   ```
 
 
 6. **Run the App:**
-```bash
-cd ..
-flutter run
-
-```
-
-
+   ```bash
+   cd ..
+   flutter run
+   ```
 
 ---
 
