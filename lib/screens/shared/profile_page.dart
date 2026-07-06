@@ -41,7 +41,7 @@ class ProfilePage extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: const Text(
-              "My Profile",
+              "Profile",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             elevation: 0,
@@ -90,7 +90,7 @@ class ProfilePage extends StatelessWidget {
     BuildContext context,
   ) {
     bool isGuest = appUser is Seeker && appUser.isGuest;
-    String? profilePicUrl = appUser is Assistant ? appUser.profilePicUrl : null;
+    String? profilePicUrl = appUser.profilePicUrl;
 
     return Column(
       children: [

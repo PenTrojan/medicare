@@ -13,6 +13,7 @@ class Admin extends AppUser {
     super.displayName,
     super.email,
     super.isSuspended = false,
+    super.profilePicUrl,
   });
 
   /*
@@ -32,6 +33,7 @@ class Admin extends AppUser {
     return Admin(
       uid: id,
       displayName: data['name'] ?? data['displayName'],
+      profilePicUrl: data['profilePicUrl'],
       email: data['email'],
       isSuspended: data['isSuspended'] ?? false,
     );
@@ -59,6 +61,7 @@ class Admin extends AppUser {
       'email': email,
       'role': role,
       'isSuspended': isSuspended,
+      'profilePicUrl': profilePicUrl,
       'registrationComplete': registrationComplete,
       'updatedAt': FieldValue.serverTimestamp(),
     };

@@ -33,6 +33,7 @@ abstract class AppUser implements FirestoreObject {
   final String? _email; //Nullable for guests
   bool _registrationComplete = false;
   bool _isSuspended = false;
+  String? _profilePicUrl;
 
   // to satisfy the interface requirement
   @override
@@ -41,14 +42,17 @@ abstract class AppUser implements FirestoreObject {
   AppUser({
     required String uid,
     String? displayName,
+    String? profilePicUrl,
     String? email,
     bool isSuspended = false,
   }) : _uid = uid,
        _displayName = displayName,
+       _profilePicUrl = profilePicUrl,
        _email = email,
        _isSuspended = isSuspended;
 
   // getters allow for read only
+  String? get profilePicUrl => _profilePicUrl;
   String get uid => _uid;
   String? get displayName => _displayName;
   String? get email => _email;
