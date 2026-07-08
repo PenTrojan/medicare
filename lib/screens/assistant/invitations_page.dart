@@ -28,12 +28,16 @@ class InvitationsPage extends StatelessWidget {
           )
           .call({'jobId': jobId, 'assistantId': assistantId});
 
+      if (context.mounted) Navigator.of(context).pop();
+
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text("Invitation ${action}ed.")));
       }
     } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
+
       if (context.mounted) {
         ScaffoldMessenger.of(
           context,

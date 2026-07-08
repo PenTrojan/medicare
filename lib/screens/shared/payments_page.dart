@@ -121,15 +121,15 @@ class PaymentsPage extends StatelessWidget {
                   ),
                 ]
               : [
-                  // Assistant Tab 1: Ongoing jobs where money is locked in escrow
+                  // Assistant Tab 1: Ongoing jobs where seeker has not settled the bill yet
                   _buildBillingListStream(
                     uid: user.uid,
                     targetStatuses: ["GENERATED"],
                   ),
-                  // Assistant Tab 2: Completed jobs waiting for automatic bank transfer
+                  // Assistant Tab 2: Seeker has settled the bill
                   _buildBillingListStream(
                     uid: user.uid,
-                    targetStatuses: ["RELEASED"],
+                    targetStatuses: ["ESCROW_HELD"],
                   ),
                 ],
         ),
@@ -276,7 +276,7 @@ class PaymentsPage extends StatelessWidget {
                   ),
                 ),
                 title: Text(
-                  "Arrangement Ledger ID: ${cleanJobId.substring(0, 6).toUpperCase()}",
+                  "Bill ID: ${cleanJobId.substring(0, 20)}",
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textMain,
