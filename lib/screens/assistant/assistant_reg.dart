@@ -565,7 +565,7 @@ class _AssistantRegState extends State<AssistantReg> {
                   Icons.home_outlined,
                 ),
                 const Text(
-                  "Do You Have Any Eductional/Training Qualifications?",
+                  "Tell us about yourself",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
 
@@ -634,7 +634,7 @@ class _AssistantRegState extends State<AssistantReg> {
 
                 const SizedBox(height: 20),
                 const Text(
-                  "Portfolio / Proof Images",
+                  "If you have any certificates, recommandations, awards or any other documents that proves your skill? ",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 _buildProofGallery(user.uid),

@@ -69,15 +69,10 @@ class _SplashPageState extends State<SplashPage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Loads your crisp vector SVG icon directly in the center
-              SvgPicture.asset(
-                'assets/icons/app_icon.svg',
-                width: 140,
-                height: 140,
-              ),
+              Image.asset('assets/icons/app_icon.png', width: 140, height: 140),
               const SizedBox(height: 24),
               const Text(
-                "SmartMediLink",
+                "Medicare",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -87,7 +82,7 @@ class _SplashPageState extends State<SplashPage>
               ),
               const SizedBox(height: 6),
               Text(
-                "Project Medicare",
+                "Healthcare, Upgraded.",
                 style: TextStyle(
                   color: Colors.cyan.shade400,
                   fontSize: 13,

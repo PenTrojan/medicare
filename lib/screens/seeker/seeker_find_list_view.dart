@@ -246,7 +246,7 @@ class _SeekerFindListViewState extends State<SeekerFindListView> {
           data['name'] ?? 'No Name',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(data['experience'] ?? 'No experience info'),
+        subtitle: Text(data['bio'] ?? 'No Bio'),
         trailing: const Icon(Icons.arrow_forward_ios, size: 14),
       ),
     );

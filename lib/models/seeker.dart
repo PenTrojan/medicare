@@ -44,6 +44,7 @@ class Seeker extends AppUser {
   }) {
     this.displayName = displayName;
     this.registrationComplete = registrationComplete;
+    this._profilePicUrl = profilePicUrl;
   }
 
   @override
