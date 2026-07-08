@@ -23,7 +23,8 @@ export const matchJobToAssistants = onDocumentWritten(
     // Determine if we should run the matching engine
     const isNewJob = !beforeSnapshot?.exists;
     const isRetry = beforeSnapshot?.exists &&
-                    beforeSnapshot.data()?.status === "no_matches" &&
+                    (beforeSnapshot.data()?.status === "no_matches" ||
+                     beforeSnapshot.data()?.status === "matching") &&
                     jobData.status === "pending";
 
     // If it's neither a new job nor a retry, exit early so we don't waste reads
