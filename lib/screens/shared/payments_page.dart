@@ -124,7 +124,7 @@ class PaymentsPage extends StatelessWidget {
                   // Assistant Tab 1: Ongoing jobs where money is locked in escrow
                   _buildBillingListStream(
                     uid: user.uid,
-                    targetStatuses: ["ESCROW_HELD"],
+                    targetStatuses: ["GENERATED"],
                   ),
                   // Assistant Tab 2: Completed jobs waiting for automatic bank transfer
                   _buildBillingListStream(

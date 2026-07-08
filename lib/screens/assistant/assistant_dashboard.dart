@@ -186,9 +186,8 @@ class AssistantDash extends StatelessWidget {
   Widget _buildNewOffersCard(BuildContext context, String assistantId) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(assistantId)
           .collection('invitations')
+          .where('assistantId', isEqualTo: assistantId)
           .where('status', isEqualTo: 'pending')
           .snapshots(),
       builder: (context, snapshot) {
@@ -325,6 +324,7 @@ class AssistantDash extends StatelessWidget {
         return Column(
           children: bookings.map((doc) {
             final booking = doc.data() as Map<String, dynamic>;
+
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
               child: ListTile(
@@ -340,21 +340,26 @@ class AssistantDash extends StatelessWidget {
                   ),
                 ),
                 title: Text(
-                  booking['seekerName'] ?? "Patient Care Assignment",
+                  booking['patientName'] ?? "Unknown Patient",
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
                 ),
                 subtitle: Text(
-                  "Rate: LKR ${booking['dailyRate']}/day",
+                  "Start Date: ${booking['startDate'].toDate().toString().split(' ')[0]}",
                   style: const TextStyle(fontSize: 12),
                 ),
                 trailing: const Icon(
                   Icons.chevron_right,
                   color: AppColors.textSecondary,
                 ),
-                onTap: () {},
+                onTap: () {
+                  if (onTabRequested != null) {
+                    // Switch to index 1 (AssistantJobsPage) and target inner tab 1 (Active)
+                    onTabRequested!(1, 1);
+                  }
+                },
               ),
             );
           }).toList(),
