@@ -58,6 +58,8 @@ export class TransactionContext {
       d.preferredGender || "unspecified",
       d.status,
       d.assignedAssistantId,
+      d.assignedAssistantName,
+      d.assignedAssistantPicUrl,
       d.topMatches,
     );
   }

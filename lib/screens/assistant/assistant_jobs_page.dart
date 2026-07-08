@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/job.dart';
 import '../../widgets/job_list_view.dart';
-import '../shared/job_details_page.dart'; // Holds AssistantJobPage
+import './assistant_job_details_page.dart'; // Holds AssistantJobPage
 import 'invitations_page.dart';
 
 class AssistantJobsPage extends StatelessWidget {

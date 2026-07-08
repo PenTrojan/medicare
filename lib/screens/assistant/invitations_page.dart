@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/job.dart';
-import '../shared/job_details_page.dart';
+import 'assistant_job_details_page.dart';
 
 class InvitationsPage extends StatelessWidget {
   const InvitationsPage({super.key});

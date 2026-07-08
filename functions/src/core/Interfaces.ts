@@ -81,6 +81,8 @@ export interface IJob {
   | "completed"
   | "cancelled";
   assignedAssistantId?: string;
+  assignedAssistantName?: string;
+  assignedAssistantPicUrl?: string | null;
   topMatches: AssistantMatch[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;

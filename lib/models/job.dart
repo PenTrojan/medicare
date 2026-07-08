@@ -40,6 +40,11 @@ class Job implements FirestoreObject {
   // Populated by the cloud function
   final List<Map<String, dynamic>> topMatches;
 
+  // Assigned Assistant Details
+  final String? assignedAssistantId;
+  final String? assignedAssistantName;
+  final String? assignedAssistantPicUrl;
+
   Job({
     required this.id,
     required this.seekerId,
@@ -57,6 +62,9 @@ class Job implements FirestoreObject {
     required this.createdAt,
     this.status = JobStatus.pending,
     this.topMatches = const [],
+    this.assignedAssistantId,
+    this.assignedAssistantName,
+    this.assignedAssistantPicUrl,
   });
 
   // Create a Job from a Firestore Document
@@ -97,6 +105,10 @@ class Job implements FirestoreObject {
         orElse: () => JobStatus.pending,
       ),
       topMatches: List<Map<String, dynamic>>.from(data['topMatches'] ?? []),
+
+      assignedAssistantId: data['assignedAssistantId'] as String?,
+      assignedAssistantName: data['assignedAssistantName'] as String?,
+      assignedAssistantPicUrl: data['assignedAssistantPicUrl'] as String?,
     );
   }
 
@@ -123,6 +135,9 @@ class Job implements FirestoreObject {
             ), // Set the saved time - Dont overwrite if already exista
       'status': status.name,
       'topMatches': topMatches,
+      'assignedAssistantId': assignedAssistantId,
+      'assignedAssistantName': assignedAssistantName,
+      'assignedAssistantPicUrl': assignedAssistantPicUrl,
     };
   }
 

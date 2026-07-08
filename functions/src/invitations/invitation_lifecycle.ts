@@ -156,16 +156,18 @@ export const acceptInvitation = onCall(async (request) => {
       const assistantRef = db.collection("users").doc(assistantId);
       const bookingRef = assistantRef.collection("bookings").doc(jobId);
 
-      const [inviteDoc, jobDoc] = await Promise.all([
+      const [inviteDoc, jobDoc, assistantDoc] = await Promise.all([
         transaction.get(inviteRef),
         transaction.get(jobRef),
+        transaction.get(assistantRef),
       ]);
 
       // 2. Initial Validations
-      if (!inviteDoc.exists || !jobDoc.exists) {
+      if (!inviteDoc.exists || !jobDoc.exists || !assistantDoc.exists) {
         throw new HttpsError("not-found", "Required documents missing.");
       }
       const jobData = jobDoc.data();
+      const assistantData = assistantDoc.data();
       const invitation = InvitationEntity.fromFirestore(inviteDoc.data());
 
       try {
@@ -187,6 +189,8 @@ export const acceptInvitation = onCall(async (request) => {
       transaction.update(jobRef, {
         status: "assigned",
         assignedAssistantId: uid,
+        assignedAssistantName: assistantData?.name || "Assistant",
+        assignedAssistantPicUrl: assistantData?.profilePicUrl || null,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 

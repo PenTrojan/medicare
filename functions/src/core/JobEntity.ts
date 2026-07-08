@@ -35,6 +35,8 @@ export class JobEntity implements IJob {
     public readonly preferredGender: IJob["preferredGender"],
     public status: IJob["status"] = "pending",
     public assignedAssistantId?: string,
+    public assignedAssistantName?: string,
+    public assignedAssistantPicUrl?: string | null,
     public topMatches: AssistantMatch[] = [],
   ) {}
 
@@ -72,10 +74,14 @@ export class JobEntity implements IJob {
    * Domain Rule Invariant: Safely shifts status checkpoints.
    * Ensures that race conditions cannot double-assign a filled job.
    * @param {string} assistantId Target provider token for enrollment.
+   * @param {string} name The display name of the accepted assistant.
+   * @param {string | null} [picUrl=null] Optional profile picture URL.
    * @return {void}
    * @throws {Error} Throws if position execution thresholds are filled.
    */
-  public assignTo(assistantId: string): void {
+  public assignTo(
+    assistantId: string, name: string, picUrl: string | null = null
+  ): void {
     if (this.status === "assigned" || this.assignedAssistantId) {
       throw new Error(
         "Domain Rule Exception: This care job context is already filled.",
@@ -84,13 +90,15 @@ export class JobEntity implements IJob {
 
     this.status = "assigned";
     this.assignedAssistantId = assistantId;
+    this.assignedAssistantName = name;
+    this.assignedAssistantPicUrl = picUrl;
   }
   /**
    * Serializes active functional internal states back to flat objects.
    * @return {Record<string, unknown>} Data map ready for Firestore writes.
    */
   public toFirestoreMap(): Record<string, unknown> {
-    return {
+    const baseMap: Record<string, unknown> = {
       seekerId: this.seekerId,
       patientName: this.patientName,
       startDate: this.startDate,
@@ -101,9 +109,15 @@ export class JobEntity implements IJob {
       preferredGender: this.preferredGender,
       status: this.status,
       topMatches: this.topMatches,
-      ...(this.assignedAssistantId && {
-        assignedAssistantId: this.assignedAssistantId,
-      }),
     };
+
+    // Safely append the assigned fields only if they exist
+    if (this.assignedAssistantId) {
+      baseMap.assignedAssistantId = this.assignedAssistantId;
+      baseMap.assignedAssistantName = this.assignedAssistantName;
+      baseMap.assignedAssistantPicUrl = this.assignedAssistantPicUrl;
+    }
+
+    return baseMap;
   }
 }

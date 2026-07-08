@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/job.dart';
 import '../../widgets/job_list_view.dart';
-import '../shared/job_details_page.dart';
+import '../seeker/seeker_job_details_page.dart';
 
 class SeekerJobDetailsPage extends StatelessWidget {
   final List<JobStatus> filterStatuses;
