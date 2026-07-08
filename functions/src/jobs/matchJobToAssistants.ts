@@ -1,24 +1,42 @@
-import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import {AssistantMatch, IJob, IAppUser} from "../core/Interfaces";
-import {MatchingEngine} from "../services/MatchingEngine";
+import {MatchingEngine} from "./MatchingEngine";
 const db = admin.firestore();
 
-export const matchJobToAssistants = onDocumentCreated(
+export const matchJobToAssistants = onDocumentWritten(
   "jobs/{jobId}",
   async (event) => {
+    // Get the before and after states
+    const afterSnapshot = event.data?.after;
+    const beforeSnapshot = event.data?.before;
+
+    // If 'after' doesn't exist, the document was deleted. Stop executing.
+    if (!afterSnapshot || !afterSnapshot.exists) return;
+
     const snapshot = event.data;
     if (!snapshot) return;
 
-    const jobData = snapshot.data() as IJob;
+    const jobData = afterSnapshot.data() as IJob;
     const jobId = event.params.jobId;
+
+    // Determine if we should run the matching engine
+    const isNewJob = !beforeSnapshot?.exists;
+    const isRetry = beforeSnapshot?.exists &&
+                    beforeSnapshot.data()?.status === "no_matches" &&
+                    jobData.status === "pending";
+
+    // If it's neither a new job nor a retry, exit early so we don't waste reads
+    if (!isNewJob && !isRetry) {
+      return;
+    }
 
     // 1. Check if location exists before continuing
     if (!jobData.location) {
       console.warn(
         `Job ${event.params.jobId} has no location. Skipping matching.`,
       );
-      return snapshot.ref.update({
+      return snapshot.after.ref.update({
         status: "pending",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -188,7 +206,7 @@ export const matchJobToAssistants = onDocumentCreated(
       // Update Job with Top 10 matches
       const top10 = finalMatches.slice(0, 10);
 
-      return snapshot.ref.update({
+      return snapshot.after.ref.update({
         topMatches: top10,
         status: top10.length > 0 ? "matching" : "no_matches",
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),

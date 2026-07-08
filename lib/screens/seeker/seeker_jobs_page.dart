@@ -37,7 +37,7 @@ class SeekerJobsPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E3A8A),
+                  color: AppColors.textMain,
                 ),
               ),
             ),
@@ -70,13 +70,13 @@ class SeekerJobsPage extends StatelessWidget {
           title: const Text(
             "Job Management",
             style: TextStyle(
-              color: Color(0xFF1E3A8A),
+              color: AppColors.textMain,
               fontWeight: FontWeight.bold,
             ),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.history, color: Color(0xFF1E3A8A)),
+              icon: const Icon(Icons.history, color: AppColors.textSecondary),
               onPressed: () => _showHistory(context),
               tooltip: "View History",
             ),

@@ -1,6 +1,6 @@
 import {HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import {TransactionContext} from "../services/TransactionContext";
+import {TransactionContext} from "./TransactionContext";
 import {BillEntity} from "../core/BillEntity";
 
 /**

@@ -1,6 +1,6 @@
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import {TransactionContext} from "../services/TransactionContext";
+import {TransactionContext} from "./TransactionContext";
 
 /**
  * Exposes a secure HTTPS callable gateway endpoint to validate, authorize,

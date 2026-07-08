@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/job.dart';
 import '../../widgets/assistant_booking_sheet.dart';
 import 'billing_details_page.dart';
@@ -128,6 +129,149 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
     }
   }
 
+  Future<void> _retryJob() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // Call the new backend retryJob Cloud Function
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('retryJob')
+          .call({'jobId': widget.job.id});
+
+      if (!mounted) return;
+      Navigator.pop(context); // Remove loading indicator
+
+      if (result.data['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Job republished! Searching for new assistants..."),
+          ),
+        );
+        Navigator.pop(context); // Go back to refresh the list
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Failed to retry job")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An unexpected error occurred: $e")),
+      );
+    }
+  }
+
+  Future<void> _showDeleteConfirmationDialog() async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Delete Job?", style: TextStyle(color: Colors.red)),
+          content: const Text(
+            "Are you sure you want to permanently delete this job request? This action cannot be undone.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _executeDelete();
+    }
+  }
+
+  Future<void> _executeDelete() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // Call the new backend deleteJob Cloud Function
+      final result = await FirebaseFunctions.instance
+          .httpsCallable('deleteJob')
+          .call({'jobId': widget.job.id});
+
+      if (!mounted) return;
+      Navigator.pop(context); // Remove loading indicator
+
+      if (result.data['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Job successfully deleted.")),
+        );
+        Navigator.pop(context); // Go back to the dashboard
+      }
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      // This will display the exact error message from your Cloud Function
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Failed to delete job")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An unexpected error occurred: $e")),
+      );
+    }
+  }
+
+  Widget _buildActionButtons() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        ElevatedButton.icon(
+          icon: const Icon(Icons.refresh),
+          label: const Text("Search Again"),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          onPressed: _retryJob,
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.delete_outline),
+          label: const Text("Delete Job"),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.red,
+            side: const BorderSide(color: Colors.red),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          onPressed: _showDeleteConfirmationDialog,
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // A seeker opening this page directly from their list dashboard should see billing
@@ -171,8 +315,29 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
                   ),
                   const SizedBox(height: 12),
                   _buildMatchesSection(),
+
+                  if (widget.job.status == JobStatus.matching)
+                    _buildActionButtons(),
+                ] else if (widget.job.status == JobStatus.no_matches) ...[
+                  // NEW: Handle the no_matches state specifically
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40.0),
+                    child: Center(
+                      child: Text(
+                        "No matches found.\nTry changing your job requirements.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.blueGrey,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _buildActionButtons(),
                 ] else if (canCancel) ...[
-                  // THE NEW CANCEL BUTTON
+                  // THE CANCEL BUTTON
                   OutlinedButton.icon(
                     icon: const Icon(Icons.cancel_outlined),
                     label: const Text("Terminate Contract Early"),
@@ -410,11 +575,11 @@ class JobSpecsView extends StatelessWidget {
                 ),
               ),
               title: const Text(
-                "View Invoice & Escrow",
+                "View Bill",
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               ),
               subtitle: const Text(
-                "Track contract pricing, fees, and clearance status.",
+                "Contract pricing, fees, and clearance status.",
               ),
               trailing: const Icon(
                 Icons.arrow_forward_ios,

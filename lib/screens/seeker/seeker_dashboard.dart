@@ -120,7 +120,7 @@ class SeekerDash extends StatelessWidget {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text("Medicare Workspace"),
+      title: const Text("Medicare"),
       backgroundColor: Colors.white,
       elevation: 0,
       centerTitle: true,
@@ -211,4 +211,3 @@ class SeekerDash extends StatelessWidget {
     );
   }
 }
-
