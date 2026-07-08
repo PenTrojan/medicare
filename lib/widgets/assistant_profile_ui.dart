@@ -5,21 +5,101 @@
 // It does not know about Firebase or jobId
 //==================================================
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../screens/shared/chat_detail_screen.dart';
 
-class AssistantProfileUI extends StatelessWidget {
+class AssistantProfileUI extends StatefulWidget {
   final Map<String, dynamic> profile;
-  final VoidCallback? onMessageTap;
 
-  const AssistantProfileUI({
-    super.key,
-    required this.profile,
-    this.onMessageTap,
-  });
+  const AssistantProfileUI({super.key, required this.profile});
+
+  @override
+  State<AssistantProfileUI> createState() => _AssistantProfileUIState();
+}
+
+class _AssistantProfileUIState extends State<AssistantProfileUI> {
+  bool _isInitializingChat = false;
+
+  Future<void> _handleMessaging(BuildContext sheetContext) async {
+    if (_isInitializingChat) return;
+
+    setState(() => _isInitializingChat = true);
+
+    final String currentSeekerId = FirebaseAuth.instance.currentUser?.uid ?? "";
+    final String targetAssistantId =
+        widget.profile['id'] ?? widget.profile['assistantId'] ?? "";
+    final String targetAssistantName = widget.profile['name'] ?? "Assistant";
+
+    if (currentSeekerId.isEmpty || targetAssistantId.isEmpty) {
+      _showSnackBar("Cannot initialize chat: Missing User IDs");
+      setState(() => _isInitializingChat = false);
+      return;
+    }
+
+    final String deterministicRoomId = "${currentSeekerId}_$targetAssistantId";
+    final roomDoc = FirebaseFirestore.instance
+        .collection('chat_rooms')
+        .doc(deterministicRoomId);
+
+    try {
+      final docSnapshot = await roomDoc.get();
+
+      if (!docSnapshot.exists) {
+        final seekerSnap = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentSeekerId)
+            .get();
+        final String seekerName =
+            seekerSnap.data()?['name'] ?? "Anonymous Seeker";
+
+        await roomDoc.set({
+          'seekerId': currentSeekerId,
+          'assistantId': targetAssistantId,
+          'seekerName': seekerName,
+          'assistantName': targetAssistantName,
+          //'lastMessage': 'Conversation initialized',
+          'lastMessageTime': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Ensure widget is active before continuing
+      if (!mounted) return;
+
+      // 1. Push the ChatDetailScreen FIRST using the root Navigator context
+      // We target the root navigator so the chat page mounts on the full screen,
+      // not nested inside the disappearing sheet.
+      await Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (context) => ChatDetailScreen(
+            roomId: deterministicRoomId,
+            targetName: targetAssistantName,
+          ),
+        ),
+      );
+
+      // 2. Clear the bottom sheet backdrop behind it after navigation succeeds
+      if (sheetContext.mounted) {
+        Navigator.of(sheetContext).pop();
+      }
+    } catch (e) {
+      _showSnackBar("Error initializing conversation: $e");
+    } finally {
+      if (mounted) setState(() => _isInitializingChat = false);
+    }
+  }
+
+  void _showSnackBar(String text) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final workingTimes = profile['workingTimes'] as Map<String, dynamic>? ?? {};
+    final workingTimes =
+        widget.profile['workingTimes'] as Map<String, dynamic>? ?? {};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,10 +110,10 @@ class AssistantProfileUI extends StatelessWidget {
             CircleAvatar(
               radius: 45,
               backgroundColor: Colors.blue[100],
-              backgroundImage: profile['profilePicUrl'] != null
-                  ? NetworkImage(profile['profilePicUrl'])
+              backgroundImage: widget.profile['profilePicUrl'] != null
+                  ? NetworkImage(widget.profile['profilePicUrl'])
                   : null,
-              child: profile['profilePicUrl'] == null
+              child: widget.profile['profilePicUrl'] == null
                   ? const Icon(Icons.person, size: 45, color: Colors.blue)
                   : null,
             ),
@@ -43,7 +123,7 @@ class AssistantProfileUI extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    profile['name'] ?? 'Assistant',
+                    widget.profile['name'] ?? 'Assistant',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -54,15 +134,16 @@ class AssistantProfileUI extends StatelessWidget {
                   Row(
                     children: [
                       _buildMiniBadge(
-                        profile['gender']?.toString().toUpperCase() ?? "N/A",
+                        widget.profile['gender']?.toString().toUpperCase() ??
+                            "N/A",
                       ),
                       const SizedBox(width: 8),
-                      _buildMiniBadge("${profile['age'] ?? '??'} Yrs"),
+                      _buildMiniBadge("${widget.profile['age'] ?? '??'} Yrs"),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "Rs. ${profile['dailyRate']}/day",
+                    "Rs. ${widget.profile['dailyRate']}/day",
                     style: const TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
@@ -83,14 +164,15 @@ class AssistantProfileUI extends StatelessWidget {
               child: _infoTile(
                 Icons.verified_user,
                 "Level",
-                profile['experienceLevel']?.toString().toUpperCase() ?? "N/A",
+                widget.profile['experienceLevel']?.toString().toUpperCase() ??
+                    "N/A",
               ),
             ),
             Expanded(
               child: _infoTile(
                 Icons.location_on,
                 "Location",
-                profile['address'] ?? "No address",
+                widget.profile['address'] ?? "No address",
               ),
             ),
           ],
@@ -100,7 +182,7 @@ class AssistantProfileUI extends StatelessWidget {
         // 3. Bio & Experience Description
         _buildSectionTitle("About & Bio"),
         Text(
-          profile['bio'] ?? "No bio available.",
+          widget.profile['bio'] ?? "No bio available.",
           style: const TextStyle(
             fontSize: 15,
             height: 1.5,
@@ -110,7 +192,8 @@ class AssistantProfileUI extends StatelessWidget {
         const SizedBox(height: 16),
         _buildSectionTitle("Work Experience"),
         Text(
-          profile['experienceDescription'] ?? "No experience details provided.",
+          widget.profile['experienceDescription'] ??
+              "No experience details provided.",
           style: TextStyle(fontSize: 14, height: 1.4, color: Colors.grey[800]),
         ),
         const SizedBox(height: 24),
@@ -120,7 +203,7 @@ class AssistantProfileUI extends StatelessWidget {
         Wrap(
           spacing: 8,
           runSpacing: 4,
-          children: (profile['skills'] as List<dynamic>? ?? [])
+          children: (widget.profile['skills'] as List<dynamic>? ?? [])
               .map(
                 (skill) => Chip(
                   label: Text(
@@ -171,22 +254,33 @@ class AssistantProfileUI extends StatelessWidget {
         ),
 
         // 6. Messaging Action Call-To-Action Button
-        if (onMessageTap != null) ...[
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: onMessageTap,
-            icon: const Icon(Icons.chat_bubble_outline),
-            label: const Text("Message Assistant"),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        const SizedBox(height: 24),
+        ElevatedButton.icon(
+          onPressed: _isInitializingChat
+              ? null
+              : () => _handleMessaging(context),
+          icon: _isInitializingChat
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.chat_bubble_outline),
+          label: Text(
+            _isInitializingChat ? "Opening Chat..." : "Message Assistant",
+          ),
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+            backgroundColor: const Color(0xFF1E3A8A),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-        ],
+        ),
       ],
     );
   }

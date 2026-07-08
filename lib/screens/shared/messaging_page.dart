@@ -29,7 +29,16 @@ class MessagingPage extends StatelessWidget {
             .collection('chat_rooms')
             .where(isSeeker ? 'seekerId' : 'assistantId', isEqualTo: currentUid)
             .orderBy('lastMessageTime', descending: true)
-            .snapshots(),
+            .snapshots()
+            .map((snapshot) {
+              // Filter out documents where lastMessage is missing or explicitly null
+              snapshot.docs.removeWhere((doc) {
+                final data = doc.data();
+                return data['lastMessage'] == null;
+              });
+              return snapshot;
+            }),
+
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
