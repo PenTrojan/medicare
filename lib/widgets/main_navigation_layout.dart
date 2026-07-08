@@ -124,90 +124,83 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-          child: Container(
-            height: 64, // Fixed height for our custom bar
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: 16.0,
-                  sigmaY: 16.0,
-                ), // Frosted glass blur
-                child: Container(
-                  color: Colors.white.withOpacity(
-                    0.15,
-                  ), // Translucent white tint
-                  child: Stack(
-                    children: [
-                      // --- THE GLIDING BUBBLE ---
-                      AnimatedAlign(
-                        duration: const Duration(milliseconds: 400),
-                        curve: Curves.easeOutQuint,
-                        alignment: Alignment(bubbleAlignmentX, 0),
-                        child: FractionallySizedBox(
-                          widthFactor:
-                              1.0 / widget.items.length, // Divides width evenly
-                          child: Center(
-                            child: Container(
-                              height: 40,
-                              width: 56, // The shape of the pill
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
+          // Wrap the Container in our CustomPaint
+          child: CustomPaint(
+            painter: OuterShadowPainter(),
+            child: Container(
+              height: 64,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+                  child: Container(
+                    color: Colors.white.withOpacity(0.15),
+                    child: Stack(
+                      children: [
+                        // --- THE GLIDING BUBBLE ---
+                        AnimatedAlign(
+                          duration: const Duration(milliseconds: 400),
+                          curve: Curves.easeOutQuint,
+                          alignment: Alignment(bubbleAlignmentX, 0),
+                          child: FractionallySizedBox(
+                            widthFactor:
+                                1.0 /
+                                widget.items.length, // Divides width evenly
+                            child: Center(
+                              child: Container(
+                                height: 40,
+                                width: 56, // The shape of the pill
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      // --- THE ICONS ---
-                      Row(
-                        children: widget.items.asMap().entries.map((entry) {
-                          final int idx = entry.key;
-                          final NavigationItemConfig item = entry.value;
-                          final bool isSelected = _selectedIndex == idx;
+                        // --- THE ICONS ---
+                        Row(
+                          children: widget.items.asMap().entries.map((entry) {
+                            final int idx = entry.key;
+                            final NavigationItemConfig item = entry.value;
+                            final bool isSelected = _selectedIndex == idx;
 
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: () => _animateToTab(idx),
-                              behavior: HitTestBehavior
-                                  .opaque, // Ensures the whole box is clickable, not just the icon
-                              child: Center(
-                                child: AnimatedDefaultTextStyle(
-                                  duration: const Duration(milliseconds: 300),
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary.withOpacity(
-                                            0.6,
-                                          ),
-                                  ),
-                                  child: Icon(
-                                    item.icon,
-                                    size: 26,
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary.withOpacity(
-                                            0.6,
-                                          ),
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () => _animateToTab(idx),
+                                behavior: HitTestBehavior
+                                    .opaque, // Ensures the whole box is clickable, not just the icon
+                                child: Center(
+                                  child: AnimatedDefaultTextStyle(
+                                    duration: const Duration(milliseconds: 300),
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary.withOpacity(
+                                              0.6,
+                                            ),
+                                    ),
+                                    child: Icon(
+                                      item.icon,
+                                      size: 26,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary.withOpacity(
+                                              0.6,
+                                            ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -219,3 +212,35 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
   }
 }
 
+class OuterShadowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // The exact bounds and shape of your navigation bar
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(32));
+
+    // 1. Create a massive box that covers the surrounding area
+    final bigRect = rect.inflate(200);
+
+    // 2. Subtract the nav bar's exact shape from that box to create a "donut hole" mask
+    final clipPath = Path.combine(
+      PathOperation.difference,
+      Path()..addRect(bigRect),
+      Path()..addRRect(rrect),
+    );
+
+    // 3. Clip the canvas. Now, NOTHING can be drawn INSIDE the nav bar area.
+    canvas.clipPath(clipPath);
+
+    // 4. Draw the shadow. Because of the clip, only the soft outer blur will be visible!
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.12)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
+
+    // Offset the shadow slightly downward
+    canvas.drawRRect(rrect.shift(const Offset(0, 8)), shadowPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
