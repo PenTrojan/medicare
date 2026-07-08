@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../models/job.dart';
 import '../../widgets/assistant_booking_sheet.dart';
+import '../../widgets/assistant_profile_ui.dart';
 import '../../widgets/job_specs_view.dart';
 import 'dart:convert';
 
@@ -19,7 +20,10 @@ class SeekerJobPage extends StatefulWidget {
 class _SeekerJobPageState extends State<SeekerJobPage> {
   bool _isFetchingProfile = false;
 
-  Future<void> _viewAssistantProfile(String assistantId) async {
+  Future<void> _viewAssistantProfile(
+    String assistantId,
+    bool showRequestButton,
+  ) async {
     setState(() => _isFetchingProfile = true);
     try {
       final result = await FirebaseFunctions.instance
@@ -32,13 +36,30 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
       final Map<String, dynamic> profileData = jsonDecode(rawJson);
       profileData['assistantId'] = assistantId;
 
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) =>
-            AssistantBookingSheet(profile: profileData, jobId: widget.job.id),
-      );
+      if (showRequestButton) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) =>
+              AssistantBookingSheet(profile: profileData, jobId: widget.job.id),
+        );
+      } else {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.white,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          ),
+          builder: (_) => Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: AssistantProfileUI(profile: profileData),
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -417,7 +438,8 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
             title: Text(assistant['name'] ?? "Assistant"),
             subtitle: Text("Rs. ${assistant['dailyRate']}/day"),
             trailing: ElevatedButton(
-              onPressed: () => _viewAssistantProfile(assistant['assistantId']),
+              onPressed: () =>
+                  _viewAssistantProfile(assistant['assistantId'], true),
               child: const Text("View"),
             ),
           ),
@@ -475,7 +497,7 @@ class _SeekerJobPageState extends State<SeekerJobPage> {
           ],
         ),
         trailing: ElevatedButton(
-          onPressed: () => _viewAssistantProfile(assistantId),
+          onPressed: () => _viewAssistantProfile(assistantId, false),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
