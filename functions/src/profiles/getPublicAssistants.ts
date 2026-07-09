@@ -11,7 +11,7 @@ if (!admin.apps.length) {
 interface PublicAssistantProfile {
   assistantId: string;
   name: string;
-  experience: string;
+  bio: string;
   profilePicUrl: string;
 }
 
@@ -59,7 +59,7 @@ export const getPublicAssistants = onRequest(
         return {
           assistantId: doc.id,
           name: data.name || "No Name",
-          experience: data.experience || "No experience info",
+          bio: data.bio || "No bio",
           profilePicUrl: data.profilePicUrl || "",
         };
       });
